@@ -1,0 +1,18 @@
+# .goreleaser.yml
+# Build customization
+builds:
+  - main: ./helm-gcs/main.go
+    binary: helm-gcs
+    ldflags: -s -w -X github.com/nouney/helm-gcs/helm-gcs/cmd.version={{.Version}} -X github.com/nouney/helm-gcs/helm-gcs/cmd.commit={{.Commit}} -X github.com/nouney/helm-gcs/helm-gcs/cmd.date={{.Date}}
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+archive:
+  format: tar.gz
+  replacements:
+    amd64: x86_64
+    darwin: Darwin
+    linux: Linux

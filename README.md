@@ -2,7 +2,6 @@
 This is a Helm plugin that allows to use Google Cloud Storage as a (private) Helm repository.
 
 ## Usage
----
 
 **You need to create a bucket on Google Cloud Storage.**
 

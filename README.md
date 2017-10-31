@@ -24,6 +24,6 @@ $ helm repo update
 # Fetch the chart
 $ helm fetch myrepo/mychart
 
-# Fetch delete a chart
+# Delete a chart
 $ helm gcs remove myrepo/mychart
 ```

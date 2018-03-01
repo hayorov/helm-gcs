@@ -7,7 +7,7 @@ This is a Helm plugin that allows to use Google Cloud Storage as a (private) Hel
 
 ```shell
 # Install the plugin
-$ helm plugin install https://github.com/nouney/helm-gcs --version 0.1.2
+$ helm plugin install https://github.com/nouney/helm-gcs --version 0.1.3
 
 # Init a new repository
 $ helm gcs init gs://bucket-name/path

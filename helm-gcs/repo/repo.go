@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -21,6 +23,8 @@ type IndexFile = k8srepo.IndexFile
 
 type Repo struct {
 	*k8srepo.Entry
+
+	indexFileURL string
 }
 
 func LoadRepo(repoName string) (*Repo, error) {
@@ -29,7 +33,11 @@ func LoadRepo(repoName string) (*Repo, error) {
 	if err != nil {
 		return nil, makeError(err)
 	}
-	return &Repo{repo}, nil
+	indexFileURL, err := resolveReference(repo.URL, "index.yaml")
+	if err != nil {
+		return nil, makeError(err)
+	}
+	return &Repo{repo, indexFileURL}, nil
 }
 
 func CreateRepo(path string) error {
@@ -38,7 +46,11 @@ func CreateRepo(path string) error {
 	if err != nil {
 		return makeError(err)
 	}
-	w, err := gcs.NewWriter(path + "/index.yaml")
+	indexFileURL, err := resolveReference(path, "/index.yaml")
+	if err != nil {
+		return makeError(err)
+	}
+	w, err := gcs.NewWriter(indexFileURL)
 	if err != nil {
 		return makeError(err)
 	}
@@ -56,7 +68,7 @@ func CreateRepo(path string) error {
 
 func (r Repo) LoadIndexFile() (*k8srepo.IndexFile, error) {
 	makeError := makeErrorFunc("repo.LoadIndexFile")
-	reader, err := gcs.NewReader(r.Entry.URL + "/index.yaml")
+	reader, err := gcs.NewReader(r.indexFileURL)
 	if err != nil {
 		return nil, makeError(err)
 	}
@@ -150,7 +162,7 @@ func (r Repo) WriteIndex(i *IndexFile) error {
 	makeError := makeErrorFunc("repo.WriteIndex")
 	i.SortEntries()
 	// Upload index
-	w, err := gcs.NewWriter(r.Entry.URL + "/index.yaml")
+	w, err := gcs.NewWriter(r.indexFileURL)
 	if err != nil {
 		return makeError(err)
 	}
@@ -176,7 +188,11 @@ func (r Repo) WriteChart(path string) error {
 		return makeError(err)
 	}
 	_, fname := filepath.Split(path)
-	writer, err := gcs.NewWriter(r.Entry.URL + "/" + fname)
+	chartURL, err := resolveReference(r.Entry.URL, fname)
+	if err != nil {
+		return makeError(err)
+	}
+	writer, err := gcs.NewWriter(chartURL)
 	if err != nil {
 		return makeError(err)
 	}
@@ -189,6 +205,15 @@ func (r Repo) WriteChart(path string) error {
 		return makeError(err)
 	}
 	return nil
+}
+
+func resolveReference(base, p string) (string, error) {
+	baseURL, err := url.Parse(base)
+	if err != nil {
+		return "", err
+	}
+	baseURL.Path = path.Join(baseURL.Path, p)
+	return baseURL.String(), nil
 }
 
 var Debug bool

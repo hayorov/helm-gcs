@@ -1,5 +1,6 @@
 # helm-gcs
-This is a Helm plugin that allows to use Google Cloud Storage as a (private) Helm repository.
+
+`helm-gcs` is a [helm](https://github.com/kubernetes/helm) plugin that allows you to manage private helm repositories on Google Cloud Storage.
 
 ## Usage
 
@@ -26,4 +27,7 @@ $ helm fetch myrepo/mychart
 
 # Delete a chart
 $ helm gcs remove myrepo/mychart
+
+# Update Helm cache
+$ helm repo update
 ```

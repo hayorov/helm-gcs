@@ -10,6 +10,8 @@ import (
 	"cloud.google.com/go/storage"
 )
 
+var ErrObjectNotExist = errors.New("gcs: " + storage.ErrObjectNotExist.Error())
+
 func NewWriter(url string) (io.WriteCloser, error) {
 	makeError := makeErrorFunc("gcs.NewWriter")
 	bucket, fullname, err := splitURL(url)
@@ -43,6 +45,9 @@ func NewReader(url string) (io.ReadCloser, error) {
 	o := b.Object(fullname[1:])
 	r, err := o.NewReader(ctx)
 	if err != nil {
+		if err == storage.ErrObjectNotExist {
+			return nil, ErrObjectNotExist
+		}
 		return nil, makeError(err)
 	}
 	return r, nil

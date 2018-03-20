@@ -50,6 +50,17 @@ func CreateRepo(path string) error {
 	if err != nil {
 		return makeError(err)
 	}
+	// Do not rewrite index.yaml if it already exists
+	_, err = gcs.NewReader(indexFileURL)
+	if err != nil {
+		if err != gcs.ErrObjectNotExist {
+			return makeError(err)
+		}
+	} else {
+		debug("repository already initialized")
+		return nil
+	}
+	// Create index.yaml
 	w, err := gcs.NewWriter(indexFileURL)
 	if err != nil {
 		return makeError(err)

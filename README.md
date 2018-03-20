@@ -8,7 +8,7 @@
 
 ```shell
 # Install the plugin
-$ helm plugin install https://github.com/nouney/helm-gcs --version 0.1.3
+$ helm plugin install https://github.com/nouney/helm-gcs --version 0.1.4
 
 # Init a new repository
 $ helm gcs init gs://bucket-name/path

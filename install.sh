@@ -1,11 +1,29 @@
 #!/bin/sh
 
-os=`uname -s`
+# Find correct archive name
+unameOut="$(uname -s)"
+
+case "${unameOut}" in
+    Linux*)     os=Linux;;
+    Darwin*)    os=Darwin;;
+    CYGWIN*)    os=Cygwin;;
+    MINGW*)     os=windows;;
+    *)          os="UNKNOWN:${unameOut}"
+esac
+
 arch=`uname -m`
 url=`curl --silent https://api.github.com/repos/nouney/helm-gcs/releases/latest | awk '/browser_download_url/ { print $2 }' | sed 's/"//g' | grep ${os}_${arch}`
-filename=`echo ${url} | rev | cut -d '/' -f 1 | rev`
+
+if [ "$url" = "" ]
+then
+    echo "Unsupported OS / architecture: ${os}_${arch}"
+    exit 1
+fi
+
+filename=`echo ${url} | sed -e "s/^.*\///g"`
+
 # Download archive
-if [ -n $(command -v curl) ] 
+if [ -n $(command -v curl) ]
 then
     curl -sSL -O $url
 elif [ -n $(command -v wget) ]

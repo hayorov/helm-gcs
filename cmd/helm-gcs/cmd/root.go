@@ -26,6 +26,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/nouney/helm-gcs/pkg/gcs"
+	"github.com/nouney/helm-gcs/pkg/repo"
 	"github.com/spf13/cobra"
 )
 
@@ -33,6 +34,7 @@ var (
 	gcsClient *storage.Client
 
 	flagServiceAccount string
+	flagDebug          bool
 )
 
 var rootCmd = &cobra.Command{
@@ -51,17 +53,17 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(func() {
 		var err error
-		gcsClient, err = gcs.NewClient("")
+		gcsClient, err = gcs.NewClient(flagServiceAccount)
 		if err != nil {
 			panic(err)
+		}
+		if flagDebug {
+			repo.Debug = true
 		}
 	})
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&flagServiceAccount, "service-account", "", "service account file")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringVar(&flagServiceAccount, "service-account", "", "--service-acount <service account filepath>")
+	rootCmd.PersistentFlags().BoolVar(&flagDebug, "debug", false, "--debug")
 }

@@ -10,7 +10,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/ghodss/yaml"
@@ -77,7 +76,7 @@ func Load(name string, gcs *storage.Client) (*Repo, error) {
 /*
  * Create creates a new repository on GCS.
  *
- * Return an error if the repository already exists.
+ * This function is idempotent.
  */
 func Create(r *Repo) error {
 	log := logger()
@@ -92,7 +91,7 @@ func Create(r *Repo) error {
 		return r.uploadIndexFile(i)
 	} else if err == nil {
 		log.Debugf("file %s already exists", r.indexFileURL)
-		return fmt.Errorf("index.yaml already exists")
+		return nil
 	}
 	return err
 }
@@ -101,7 +100,7 @@ func Create(r *Repo) error {
  * AddChart adds a chart into the repository.
  *
  * The index file on GCS will be updated and the file at "chartpath" will be uploaded to GCS.
- * If this version of the chart is already indexed, it won't be uploaded unless "force" is set to true.
+ * If the version of the chart is already indexed, it won't be uploaded unless "force" is set to true.
  */
 func (r Repo) PushChart(chartpath string, force, retry bool) error {
 	log := logger()
@@ -109,7 +108,6 @@ func (r Repo) PushChart(chartpath string, force, retry bool) error {
 	if err != nil {
 		return errors.Wrap(err, "load index file")
 	}
-	time.Sleep(time.Second * 10)
 	log.Debugf("load chart \"%s\" (force=%t, retry=%t)", chartpath, force, retry)
 	chart, err := chartutil.Load(chartpath)
 	if err != nil {
@@ -277,7 +275,7 @@ func (r Repo) uploadChart(chartpath string) error {
 	if err != nil {
 		return errors.Wrap(err, "resolve reference")
 	}
-	log.Debugf("file %s will be uploaded to gcs path %s", fname, chartURL)
+	log.Debugf("upload file %s to gcs path %s", fname, chartURL)
 	o, err := gcs.Object(r.gcs, chartURL)
 	if err != nil {
 		return errors.Wrap(err, "object")

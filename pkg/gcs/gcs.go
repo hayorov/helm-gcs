@@ -29,64 +29,6 @@ func Object(client *storage.Client, path string) (*storage.ObjectHandle, error) 
 	return client.Bucket(bucket).Object(path), nil
 }
 
-/*
-//  * NewWriter creates a new writer on GCS for the given path.
-//  */
-// func NewWriter(client *storage.Client, path string) (io.WriteCloser, error) {
-// 	bucket, path, err := splitPath(path)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "split path")
-// 	}
-// 	ctx := context.Background()
-// 	writer := client.Bucket(bucket).Object(path).NewWriter(ctx)
-// 	return writer, nil
-// }
-
-// /*
-//  * NewReader creates a new reader on GCS for the given path.
-//  */
-// func NewReader(client *storage.Client, path string) (io.ReadCloser, error) {
-// 	bucket, path, err := splitPath(path)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "split path")
-// 	}
-// 	ctx := context.Background()
-// 	reader, err := client.Bucket(bucket).Object(path).NewReader(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return reader, nil
-// }
-
-// /*
-//  * DeleteFile deletes a file from gcs
-//  */
-// func DeleteFile(client *storage.Client, path string) error {
-// 	bucket, path, err := splitPath(path)
-// 	if err != nil {
-// 		return errors.Wrap(err, "split path")
-// 	}
-// 	ctx := context.Background()
-// 	err = client.Bucket(bucket).Object(path).Delete(ctx)
-// 	if err != nil {
-// 		return errors.Wrap(err, "gcs")
-// 	}
-// 	return nil
-// }
-
-// func ObjectAttrs(client *storage.Client, path string) (*storage.ObjectAttrs, error) {
-// 	bucket, path, err := splitPath(path)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "split path")
-// 	}
-// 	ctx := context.Background()
-// 	attrs, err := client.Bucket(bucket).Object(path).Attrs(ctx)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "attrs")
-// 	}
-// 	return attrs, nil
-// }
-
 func splitPath(gcsurl string) (bucket string, path string, err error) {
 	u, err := url.Parse(gcsurl)
 	if err != nil {

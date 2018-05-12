@@ -2,11 +2,11 @@
 
 cd $HELM_PLUGIN_DIR
 version="$(cat plugin.yaml | grep "version" | cut -d '"' -f 2)"
-echo "helm-gcs v${version} ..."
+echo "Installing helm-gcs ${version} ..."
 
 os=`uname -s`
 arch=`uname -m`
-url=`curl --silent https://api.github.com/repos/nouney/helm-gcs/releases/latest | awk '/browser_download_url/ { print $2 }' | sed 's/"//g' | grep ${os}_${arch}`
+url="https://github.com/nouney/helm-gcs/releases/download/${version}/helm-gcs_${version}_${os}_${arch}.tar.gz"
 filename=`echo ${url} | rev | cut -d '/' -f 1 | rev`
 # Download archive
 if [ -n $(command -v curl) ] 
@@ -14,7 +14,7 @@ then
     curl -sSL -O $url
 elif [ -n $(command -v wget) ]
 then
-    wget $url
+    wget -q $url
 else
     echo "Need curl or wget"
     exit -1

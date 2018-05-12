@@ -1,5 +1,9 @@
 #!/bin/sh
 
+cd $HELM_PLUGIN_DIR
+version="$(cat plugin.yaml | grep "version" | cut -d '"' -f 2)"
+echo "helm-gcs v${version} ..."
+
 os=`uname -s`
 arch=`uname -m`
 url=`curl --silent https://api.github.com/repos/nouney/helm-gcs/releases/latest | awk '/browser_download_url/ { print $2 }' | sed 's/"//g' | grep ${os}_${arch}`
@@ -17,7 +21,6 @@ else
 fi
 
 # Install bin
-cd ..
 rm -rf bin && mkdir bin && tar xzvf $filename -C bin > /dev/null && rm -f $filename
 
 echo "helm-gcs is correctly installed."

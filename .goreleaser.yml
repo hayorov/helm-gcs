@@ -1,9 +1,9 @@
 # .goreleaser.yml
 # Build customization
 builds:
-  - main: ./helm-gcs/main.go
+  - main: ./cmd/helm-gcs/main.go
     binary: helm-gcs
-    ldflags: -s -w -X github.com/nouney/helm-gcs/helm-gcs/cmd.version={{.Version}} -X github.com/nouney/helm-gcs/helm-gcs/cmd.commit={{.Commit}} -X github.com/nouney/helm-gcs/helm-gcs/cmd.date={{.Date}}
+    ldflags: -s -w -X github.com/nouney/helm-gcs/cmd/helm-gcs/cmd.version={{.Version}} -X github.com/nouney/helm-gcs/cmd/helm-gcs/cmd.commit={{.Commit}} -X github.com/nouney/helm-gcs/cmd/helm-gcs/cmd.date={{.Date}}
     goos:
       - windows
       - darwin

@@ -21,30 +21,21 @@
 package cmd
 
 import (
-	"strings"
-
 	"github.com/nouney/helm-gcs/pkg/repo"
 	"github.com/spf13/cobra"
 )
 
 var flagVersion string
 
-// rmCmd represents the rm command
 var rmCmd = &cobra.Command{
-	Use:   "rm",
-	Short: "A brief description of your command",
-	Long:  ``,
+	Use:     "rm [chart] [repository]",
+	Aliases: []string{"remove"},
+	Short:   "remove a chart",
+	Long: `This command removes a chart into a repository that has been added to helm via "helm repo add".
+If no specific version is given, all versions will be removed.`,
+	Args: cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var repoName string
-		var chart string
-		if len(args) >= 2 {
-			chart = args[0]
-			repoName = args[1]
-		} else if len(args) == 1 {
-			chunks := strings.Split(args[0], "/")
-			chart = chunks[1]
-			repoName = chunks[0]
-		}
+		chart, repoName := args[0], args[1]
 		r, err := repo.Load(repoName, gcsClient)
 		if err != nil {
 			return err
@@ -55,14 +46,5 @@ var rmCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(rmCmd)
-	rmCmd.Flags().StringVarP(&flagVersion, "version", "v", "", "-v <version>")
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// rmCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// rmCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rmCmd.Flags().StringVarP(&flagVersion, "version", "v", "", "version of the chart to remove")
 }

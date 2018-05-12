@@ -34,7 +34,7 @@ var (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "A brief description of your command",
+	Short: "print current helm-gcs version",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("version:", version)

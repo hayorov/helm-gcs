@@ -39,7 +39,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "helm-gcs",
-	Short: "A brief description of your application",
+	Short: "Manage Helm repositories on Google Cloud Storage",
 	Long:  ``,
 }
 
@@ -61,9 +61,6 @@ func init() {
 			repo.Debug = true
 		}
 	})
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&flagServiceAccount, "service-account", "", "--service-acount <service account filepath>")
-	rootCmd.PersistentFlags().BoolVar(&flagDebug, "debug", false, "--debug")
+	rootCmd.PersistentFlags().StringVar(&flagServiceAccount, "service-account", "", "service account to use for GCS")
+	rootCmd.PersistentFlags().BoolVar(&flagDebug, "debug", false, "activate debug")
 }

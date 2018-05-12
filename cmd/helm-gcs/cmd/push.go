@@ -27,13 +27,13 @@ import (
 
 var (
 	flagForce bool
+	flagRetry bool
 )
 
-// pushCmd represents the push command
 var pushCmd = &cobra.Command{
-	Use:   "push",
-	Short: "A brief description of your command",
-	Long:  ``,
+	Use:   "push [chart.tar.gz] [repository]",
+	Short: "push a chart into a repository",
+	Long:  `This command pushes a chart into a repository that has been added to helm via "helm repo add".`,
 	Args:  cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		chartpath, repoName := args[0], args[1]
@@ -41,11 +41,12 @@ var pushCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return r.PushChart(chartpath, flagForce)
+		return r.PushChart(chartpath, flagForce, flagRetry)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(pushCmd)
-	pushCmd.Flags().BoolVarP(&flagForce, "force", "f", false, "force pushing the chart")
+	pushCmd.Flags().BoolVar(&flagForce, "force", false, "upload the chart even if already indexed")
+	pushCmd.Flags().BoolVar(&flagRetry, "retry", false, "retry if the index changed")
 }

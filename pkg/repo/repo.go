@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,27 +10,32 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/ghodss/yaml"
 	"github.com/nouney/helm-gcs/pkg/gcs"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/api/googleapi"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/helm/environment"
 	"k8s.io/helm/pkg/helm/helmpath"
+	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/provenance"
 	"k8s.io/helm/pkg/repo"
 )
 
 var (
-	Debug = false
+	Debug             = false
+	ErrIndexOutOfDate = errors.New("index is out-of-date")
 )
 
 type Repo struct {
-	entry        *repo.Entry
-	indexFileURL string
-	gcs          *storage.Client
+	entry               *repo.Entry
+	indexFileURL        string
+	indexFileGeneration int64
+	gcs                 *storage.Client
 }
 
 func New(path string, gcs *storage.Client) (*Repo, error) {
@@ -76,10 +82,14 @@ func Load(name string, gcs *storage.Client) (*Repo, error) {
 func Create(r *Repo) error {
 	log := logger()
 	log.Debugf("create a repository with index file at %s", r.indexFileURL)
-	_, err := gcs.NewReader(r.gcs, r.indexFileURL)
+	o, err := gcs.Object(r.gcs, r.indexFileURL)
+	if err != nil {
+		return errors.Wrap(err, "object")
+	}
+	_, err = o.NewReader(context.Background())
 	if err == storage.ErrObjectNotExist {
 		i := repo.NewIndexFile()
-		return r.pushIndexFile(i)
+		return r.uploadIndexFile(i)
 	} else if err == nil {
 		log.Debugf("file %s already exists", r.indexFileURL)
 		return fmt.Errorf("index.yaml already exists")
@@ -90,39 +100,42 @@ func Create(r *Repo) error {
 /*
  * AddChart adds a chart into the repository.
  *
- * If the chart already exists and "force" is false then nothing will happen.
- * Expects an already packaged chart (via "helm package").
+ * The index file on GCS will be updated and the file at "chartpath" will be uploaded to GCS.
+ * If this version of the chart is already indexed, it won't be uploaded unless "force" is set to true.
  */
-func (r Repo) PushChart(chartpath string, force bool) error {
+func (r Repo) PushChart(chartpath string, force, retry bool) error {
 	log := logger()
-	log.Debugf("pushing chart %s into repository \"%s\" (%s) (force=%t)", chartpath, r.entry.Name, r.entry.URL, force)
 	i, err := r.indexFile()
 	if err != nil {
-		return errors.Wrap(err, "index")
+		return errors.Wrap(err, "load index file")
 	}
+	time.Sleep(time.Second * 10)
+	log.Debugf("load chart \"%s\" (force=%t, retry=%t)", chartpath, force, retry)
 	chart, err := chartutil.Load(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "load chart")
 	}
-	// We do not need to update the index if the chart is already in it.
-	// If force is true, then the chart will be uploaded even if already indexed.
-	if i.Has(chart.Metadata.Name, chart.Metadata.Version) == false {
-		hash, err := provenance.DigestFile(chartpath)
-		if err != nil {
-			return errors.Wrap(err, "digest file")
-		}
-		_, fname := filepath.Split(chartpath)
-		log.Debugf("indexing chart '%s-%s' as '%s' (base url: %s)", chart.Metadata.Name, chart.Metadata.Version, fname, r.entry.URL)
-		i.Add(chart.GetMetadata(), fname, r.entry.URL, hash)
-		err = r.pushIndexFile(i)
-		if err != nil {
-			return errors.Wrap(err, "write index")
-		}
-	} else if !force {
-		log.Warnf("chart %s-%s already exists. Use --force if you still need to upload the chart", chart.Metadata.Name, chart.Metadata.Version)
-		return nil
+	log.Debugf("chart loaded: %s-%s", chart.Metadata.Name, chart.Metadata.Version)
+	if i.Has(chart.Metadata.Name, chart.Metadata.Version) == true && !force {
+		return fmt.Errorf("chart %s-%s already indexed. Use --force to still upload the chart.", chart.Metadata.Name, chart.Metadata.Version)
 	}
-	err = r.pushChart(chartpath)
+	if i.Has(chart.Metadata.Name, chart.Metadata.Version) == false {
+		err := r.updateIndexFile(i, chartpath, chart)
+		if err == ErrIndexOutOfDate && retry {
+			for err == ErrIndexOutOfDate {
+				i, err = r.indexFile()
+				if err != nil {
+					return errors.Wrap(err, "load index file")
+				}
+				err = r.updateIndexFile(i, chartpath, chart)
+			}
+		}
+		if err != nil {
+			return errors.Wrap(err, "update index file")
+		}
+	}
+	log.Debugf("upload file to GCS")
+	err = r.uploadChart(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "write chart")
 	}
@@ -133,10 +146,12 @@ func (r Repo) PushChart(chartpath string, force bool) error {
  * RemoveChart removes a chart from the repository
  *
  * If version is empty, all version will be deleted.
+ * Provide optimistic locking.
  */
 func (r Repo) RemoveChart(name, version string) error {
 	log := logger()
 	log.Debugf("removing chart %s-%s", name, version)
+	// Update index file
 	index, err := r.indexFile()
 	if err != nil {
 		return errors.Wrap(err, "index")
@@ -145,37 +160,52 @@ func (r Repo) RemoveChart(name, version string) error {
 	if !ok {
 		return fmt.Errorf("chart \"%s\" not found", name)
 	}
+	urls := []string{}
 	for i, v := range vs {
 		if version == "" || version == v.Version {
-			for _, url := range v.URLs {
-				log.Debugf("delete version %s with url %s", v.Version, url)
-				err := gcs.DeleteFile(r.gcs, url)
-				if err != nil {
-					return errors.Wrap(err, "delete")
-				}
-			}
+			log.Debugf("%s-%s will be deleted", name, v.Version)
+			urls = append(urls, v.URLs...)
 		}
 		if version == v.Version {
 			index.Entries[name] = append(vs[:i], vs[i+1:]...)
 			break
 		}
 	}
-	if version == "" {
+	if version == "" || len(index.Entries[name]) == 0 {
 		delete(index.Entries, name)
 	}
-	err = r.pushIndexFile(index)
+	err = r.uploadIndexFile(index)
 	if err != nil {
 		return err
+	}
+	// Delete charts from GCS
+	for _, url := range urls {
+		o, err := gcs.Object(r.gcs, url)
+		if err != nil {
+			return errors.Wrap(err, "object")
+		}
+		log.Debugf("delete gcs file %s", url)
+		err = o.Delete(context.Background())
+		if err != nil {
+			return errors.Wrap(err, "delete")
+		}
 	}
 	return nil
 }
 
 /*
- * pushIndexFile update the index file on GCS.
+ * uploadIndexFile update the index file on GCS.
  */
-func (r Repo) pushIndexFile(i *repo.IndexFile) error {
+func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
+	log := logger()
+	log.Debugf("push index file")
 	i.SortEntries()
-	w, err := gcs.NewWriter(r.gcs, r.indexFileURL)
+	o, err := gcs.Object(r.gcs, r.indexFileURL)
+	if r.indexFileGeneration != 0 {
+		log.Debugf("update condition: if generation = %d", r.indexFileGeneration)
+		o = o.If(storage.Conditions{GenerationMatch: r.indexFileGeneration})
+	}
+	w := o.NewWriter(context.Background())
 	if err != nil {
 		return errors.Wrap(err, "writer")
 	}
@@ -189,6 +219,10 @@ func (r Repo) pushIndexFile(i *repo.IndexFile) error {
 	}
 	err = w.Close()
 	if err != nil {
+		gerr, ok := err.(*googleapi.Error)
+		if ok && gerr.Code == 412 {
+			return ErrIndexOutOfDate
+		}
 		return errors.Wrap(err, "close")
 	}
 	return nil
@@ -196,9 +230,23 @@ func (r Repo) pushIndexFile(i *repo.IndexFile) error {
 
 /*
  * indexFile retrieves the index file from GCS.
+ *
+ * It will also retrieve the generation number of the file, for optimistic locking.
  */
-func (r Repo) indexFile() (*repo.IndexFile, error) {
-	reader, err := gcs.NewReader(r.gcs, r.indexFileURL)
+func (r *Repo) indexFile() (*repo.IndexFile, error) {
+	log := logger()
+	log.Debugf("load index file \"%s\"", r.indexFileURL)
+	o, err := gcs.Object(r.gcs, r.indexFileURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "object")
+	}
+	attrs, err := o.Attrs(context.Background())
+	if err != nil {
+		return nil, errors.Wrap(err, "attrs")
+	}
+	r.indexFileGeneration = attrs.Generation
+	log.Debugf("index file generation: %d", r.indexFileGeneration)
+	reader, err := o.NewReader(context.Background())
 	if err != nil {
 		return nil, errors.Wrap(err, "reader")
 	}
@@ -216,9 +264,9 @@ func (r Repo) indexFile() (*repo.IndexFile, error) {
 }
 
 /*
- * pushChart pushes a chart into the repository.
+ * uploadChart pushes a chart into the repository.
  */
-func (r Repo) pushChart(chartpath string) error {
+func (r Repo) uploadChart(chartpath string) error {
 	log := logger()
 	f, err := os.Open(chartpath)
 	if err != nil {
@@ -230,10 +278,11 @@ func (r Repo) pushChart(chartpath string) error {
 		return errors.Wrap(err, "resolve reference")
 	}
 	log.Debugf("file %s will be uploaded to gcs path %s", fname, chartURL)
-	w, err := gcs.NewWriter(r.gcs, chartURL)
+	o, err := gcs.Object(r.gcs, chartURL)
 	if err != nil {
-		return errors.Wrap(err, "writer")
+		return errors.Wrap(err, "object")
 	}
+	w := o.NewWriter(context.Background())
 	_, err = io.Copy(w, f)
 	if err != nil {
 		return errors.Wrap(err, "copy")
@@ -243,6 +292,18 @@ func (r Repo) pushChart(chartpath string) error {
 		return errors.Wrap(err, "close")
 	}
 	return nil
+}
+
+func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.Chart) error {
+	log := logger()
+	hash, err := provenance.DigestFile(chartpath)
+	if err != nil {
+		return errors.Wrap(err, "digest file")
+	}
+	_, fname := filepath.Split(chartpath)
+	log.Debugf("indexing chart '%s-%s' as '%s' (base url: %s)", chart.Metadata.Name, chart.Metadata.Version, fname, r.entry.URL)
+	i.Add(chart.GetMetadata(), fname, r.entry.URL, hash)
+	return r.uploadIndexFile(i)
 }
 
 func resolveReference(base, p string) (string, error) {

@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"context"
 	"io"
 	"os"
 
@@ -29,11 +30,16 @@ import (
 )
 
 var pullCmd = &cobra.Command{
-	Use:   "pull",
-	Short: "pull a file from gcs",
-	Long:  `pull a file from gcs and prints it to stdout`,
+	Use:   "pull gs://bucket/path",
+	Short: "prints a file on stdout",
+	Long: `This command pull a file from GCS and prints it to stdout.
+Used by helm to fetch charts from GCS.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		r, err := gcs.NewReader(gcsClient, args[0])
+		o, err := gcs.Object(gcsClient, args[0])
+		if err != nil {
+			return err
+		}
+		r, err := o.NewReader(context.Background())
 		if err != nil {
 			return err
 		}

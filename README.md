@@ -14,7 +14,29 @@ Install a specific version:
 $ helm plugin install https://github.com/nouney/helm-gcs --version 0.2.0
 ```
 
-## Getting started
+## Quick start
+
+```shell
+# Init a new repository
+$ helm gcs init gs://bucket/path
+
+# Add your repository to Helm
+$ helm repo add repo-name gs://bucket/path
+
+# Push a chart to your repository
+$ helm gcs push chart.tar.gz repo-name
+
+# Update Helm cache
+$ helm repo update
+
+# Fetch the chart
+$ helm fetch repo-name/chart
+
+# Remove the chart
+$ helm gcs rm chart repo-name
+```
+
+## Documentation
 
 ### Authentification
 

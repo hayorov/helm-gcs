@@ -9,10 +9,12 @@ import (
 	"google.golang.org/api/option"
 )
 
+// NewClient creates a new gcs client.
+// Use Application Default Credentials if serviceAccount is empty.
 func NewClient(serviceAccountPath string) (*storage.Client, error) {
 	opts := []option.ClientOption{}
 	if serviceAccountPath != "" {
-		opts = append(opts, option.WithServiceAccountFile(serviceAccountPath))
+		opts = append(opts, option.WithCredentialsFile(serviceAccountPath))
 	}
 	client, err := storage.NewClient(context.Background(), opts...)
 	if err != nil {
@@ -21,6 +23,7 @@ func NewClient(serviceAccountPath string) (*storage.Client, error) {
 	return client, err
 }
 
+// Object retourne a new object handle for the given path
 func Object(client *storage.Client, path string) (*storage.ObjectHandle, error) {
 	bucket, path, err := splitPath(path)
 	if err != nil {

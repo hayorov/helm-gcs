@@ -30,4 +30,4 @@ script:
   - megacheck ./...                          # "go vet on steroids" + linter
   - gocyclo -over 19 cmd pkg                 # forbid code with huge/complex functions
   - golint -set_exit_status $(go list ./...) # one last linter
-  - go build cmd/k8slog/*.go                 # compilation
+  - go build cmd/helm-gcs/main.go            # compilation

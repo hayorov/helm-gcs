@@ -120,4 +120,4 @@ $ helm gcs remove my-chart my-repository --version 0.1.0
 
 ## Troubleshooting
 
-You can use the global flag `--debug` to get more informations. Please write an issue if you find any bug.
+You can use the global flag `--debug`, or set `HELM_GCS_DEBUG=true` to get more informations. Please write an issue if you find any bug.

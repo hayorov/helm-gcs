@@ -41,7 +41,7 @@ fi
 # Install bin
 rm -rf bin && mkdir bin && tar xzvf $filename -C bin > /dev/null && rm -f $filename
 
-echo "helm-gcs is correctly installed."
+echo "helm-gcs ${version} is correctly installed."
 echo
 
 echo "Init a new repository:"

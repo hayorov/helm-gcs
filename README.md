@@ -1,6 +1,6 @@
 **UNMAINTENED**
 
-This project is not maintened anymore. I'm not using Helm anymore.
+This project is not maintened, mostly because I'm not using Helm anymore.
 Please let me know if you want to take over the ownership of it.
 
 

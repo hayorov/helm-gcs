@@ -1,3 +1,9 @@
+**UMAINTENED**
+
+This project is not maintened anymore. I'm not using Helm anymore.
+Please let me know if you want to take over the ownership of it.
+
+
 # helm-gcs [![Build Status](https://travis-ci.org/nouney/helm-gcs.svg?branch=master)](https://travis-ci.org/nouney/helm-gcs)
 
 `helm-gcs` is a [helm](https://github.com/kubernetes/helm) plugin that allows you to manage private helm repositories on Google Cloud Storage.

@@ -8,21 +8,22 @@ echo "Installing helm-gcs ${version} ..."
 unameOut="$(uname -s)"
 
 case "${unameOut}" in
-    Linux*)     os=Linux;;
-    Darwin*)    os=Darwin;;
-    CYGWIN*)    os=Cygwin;;
-    MINGW*)     os=windows;;
-    *)          os="UNKNOWN:${unameOut}"
+    Linux*)             os=Linux;;
+    Darwin*)            os=Darwin;;
+    CYGWIN*)            os=Cygwin;;
+    MINGW*|MSYS_NT*)    os=windows;;
+    *)                  os="UNKNOWN:${unameOut}"
 esac
 
 arch=`uname -m`
-url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_${version}_${os}_${arch}.tar.gz"
 
-if [ "$url" = "" ]
+if [[ "$os" = *"UNKNOWN"* ]]
 then
     echo "Unsupported OS / architecture: ${os}_${arch}"
     exit 1
 fi
+
+url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_${version}_${os}_${arch}.tar.gz"
 
 filename=`echo ${url} | sed -e "s/^.*\///g"`
 

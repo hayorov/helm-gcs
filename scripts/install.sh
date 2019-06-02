@@ -23,7 +23,7 @@ then
     exit 1
 fi
 
-url="https://github.com/nouney/helm-gcs/releases/download/${version}/helm-gcs_${version}_${os}_${arch}.tar.gz"
+url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_${version}_${os}_${arch}.tar.gz"
 
 filename=`echo ${url} | sed -e "s/^.*\///g"`
 

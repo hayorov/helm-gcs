@@ -1,13 +1,13 @@
 name: "gcs"
-version: "0.2.0"
-usage: "repositories on Google Cloud Storage" 
+version: "0.2.1"
+usage: "Chart repositories on Google Cloud Storage"
 description: |-
   Manage repositories on Google Cloud Storage
 command: "$HELM_PLUGIN_DIR/bin/helm-gcs"
 downloaders:
-- command: "scripts/pull.sh"
-  protocols:
-  - "gs"
+  - command: "scripts/pull.sh"
+    protocols:
+      - "gs"
 
 hooks:
   install: "cd $HELM_PLUGIN_DIR; ./scripts/install.sh"

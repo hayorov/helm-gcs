@@ -28,26 +28,31 @@ type Tag struct {
 	Value string
 }
 
-// Map is a map of tags. Use NewMap to build tag maps.
-type Map struct {
-	m map[Key]string
+type tagContent struct {
+	value string
+	m     metadatas
 }
 
-// Value returns the value for the key if a value
-// for the key exists.
+// Map is a map of tags. Use New to create a context containing
+// a new Map.
+type Map struct {
+	m map[Key]tagContent
+}
+
+// Value returns the value for the key if a value for the key exists.
 func (m *Map) Value(k Key) (string, bool) {
 	if m == nil {
 		return "", false
 	}
 	v, ok := m.m[k]
-	return v, ok
+	return v.value, ok
 }
 
 func (m *Map) String() string {
 	if m == nil {
 		return "nil"
 	}
-	var keys []Key
+	keys := make([]Key, 0, len(m.m))
 	for k := range m.m {
 		keys = append(keys, k)
 	}
@@ -62,29 +67,29 @@ func (m *Map) String() string {
 	return buffer.String()
 }
 
-func (m *Map) insert(k Key, v string) {
+func (m *Map) insert(k Key, v string, md metadatas) {
 	if _, ok := m.m[k]; ok {
 		return
 	}
-	m.m[k] = v
+	m.m[k] = tagContent{value: v, m: md}
 }
 
-func (m *Map) update(k Key, v string) {
+func (m *Map) update(k Key, v string, md metadatas) {
 	if _, ok := m.m[k]; ok {
-		m.m[k] = v
+		m.m[k] = tagContent{value: v, m: md}
 	}
 }
 
-func (m *Map) upsert(k Key, v string) {
-	m.m[k] = v
+func (m *Map) upsert(k Key, v string, md metadatas) {
+	m.m[k] = tagContent{value: v, m: md}
 }
 
 func (m *Map) delete(k Key) {
 	delete(m.m, k)
 }
 
-func newMap(sizeHint int) *Map {
-	return &Map{m: make(map[Key]string, sizeHint)}
+func newMap() *Map {
+	return &Map{m: make(map[Key]tagContent)}
 }
 
 // Mutator modifies a tag map.
@@ -95,13 +100,17 @@ type Mutator interface {
 // Insert returns a mutator that inserts a
 // value associated with k. If k already exists in the tag map,
 // mutator doesn't update the value.
-func Insert(k Key, v string) Mutator {
+// Metadata applies metadata to the tag. It is optional.
+// Metadatas are applied in the order in which it is provided.
+// If more than one metadata updates the same attribute then
+// the update from the last metadata prevails.
+func Insert(k Key, v string, mds ...Metadata) Mutator {
 	return &mutator{
 		fn: func(m *Map) (*Map, error) {
 			if !checkValue(v) {
 				return nil, errInvalidValue
 			}
-			m.insert(k, v)
+			m.insert(k, v, createMetadatas(mds...))
 			return m, nil
 		},
 	}
@@ -110,13 +119,17 @@ func Insert(k Key, v string) Mutator {
 // Update returns a mutator that updates the
 // value of the tag associated with k with v. If k doesn't
 // exists in the tag map, the mutator doesn't insert the value.
-func Update(k Key, v string) Mutator {
+// Metadata applies metadata to the tag. It is optional.
+// Metadatas are applied in the order in which it is provided.
+// If more than one metadata updates the same attribute then
+// the update from the last metadata prevails.
+func Update(k Key, v string, mds ...Metadata) Mutator {
 	return &mutator{
 		fn: func(m *Map) (*Map, error) {
 			if !checkValue(v) {
 				return nil, errInvalidValue
 			}
-			m.update(k, v)
+			m.update(k, v, createMetadatas(mds...))
 			return m, nil
 		},
 	}
@@ -126,16 +139,35 @@ func Update(k Key, v string) Mutator {
 // value of the tag associated with k with v. It inserts the
 // value if k doesn't exist already. It mutates the value
 // if k already exists.
-func Upsert(k Key, v string) Mutator {
+// Metadata applies metadata to the tag. It is optional.
+// Metadatas are applied in the order in which it is provided.
+// If more than one metadata updates the same attribute then
+// the update from the last metadata prevails.
+func Upsert(k Key, v string, mds ...Metadata) Mutator {
 	return &mutator{
 		fn: func(m *Map) (*Map, error) {
 			if !checkValue(v) {
 				return nil, errInvalidValue
 			}
-			m.upsert(k, v)
+			m.upsert(k, v, createMetadatas(mds...))
 			return m, nil
 		},
 	}
+}
+
+func createMetadatas(mds ...Metadata) metadatas {
+	var metas metadatas
+	if len(mds) > 0 {
+		for _, md := range mds {
+			if md != nil {
+				md(&metas)
+			}
+		}
+	} else {
+		WithTTL(TTLUnlimitedPropagation)(&metas)
+	}
+	return metas
+
 }
 
 // Delete returns a mutator that deletes
@@ -153,17 +185,17 @@ func Delete(k Key) Mutator {
 // originated from the incoming context and modified
 // with the provided mutators.
 func New(ctx context.Context, mutator ...Mutator) (context.Context, error) {
-	m := newMap(0)
+	m := newMap()
 	orig := FromContext(ctx)
 	if orig != nil {
 		for k, v := range orig.m {
 			if !checkKeyName(k.Name()) {
 				return ctx, fmt.Errorf("key:%q: %v", k, errInvalidKeyName)
 			}
-			if !checkValue(v) {
+			if !checkValue(v.value) {
 				return ctx, fmt.Errorf("key:%q value:%q: %v", k.Name(), v, errInvalidValue)
 			}
-			m.insert(k, v)
+			m.insert(k, v.value, v.m)
 		}
 	}
 	var err error

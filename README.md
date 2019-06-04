@@ -10,14 +10,14 @@ helm-gcs has a new owner [@hayorov](https://github.com/hayorov) and **more maint
 
 ## Installation
 
-Install the latest version:
+Install the stable version:
 ```shell
 $ helm plugin install https://github.com/hayorov/helm-gcs
 ```
 
 Install a specific version:
 ```shell
-$ helm plugin install https://github.com/hayorov/helm-gcs --version 0.2.0
+$ helm plugin install https://github.com/hayorov/helm-gcs --version 0.2.1
 ```
 
 ## Quick start

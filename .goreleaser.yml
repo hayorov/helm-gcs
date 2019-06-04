@@ -12,9 +12,10 @@ builds:
       - amd64
     env:
       - CGO_ENABLED=0
-archive:
-  format: tar.gz
-  replacements:
-    amd64: x86_64
-    darwin: Darwin
-    linux: Linux
+archives:
+  - id: helm-gcs
+    format: tar.gz
+    replacements:
+      amd64: x86_64
+      darwin: Darwin
+      linux: Linux

@@ -106,14 +106,14 @@ func Create(r *Repo) error {
 // If the version of the chart is already indexed, it won't be uploaded unless "force" is set to true.
 // The push will fail if the repository is updated at the same time, use "retry" to automatically reload
 // the index of the repository.
-func (r Repo) PushChart(chartpath string, force, retry bool) error {
+func (r Repo) PushChart(chartpath string, force, retry bool, public bool, publicURL string) error {
 	log := logger()
 	i, err := r.indexFile()
 	if err != nil {
 		return errors.Wrap(err, "load index file")
 	}
 
-	log.Debugf("load chart \"%s\" (force=%t, retry=%t)", chartpath, force, retry)
+	log.Debugf("load chart \"%s\" (force=%t, retry=%t, public=%t)", chartpath, force, retry, public)
 	chart, err := chartutil.Load(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "load chart")
@@ -125,14 +125,14 @@ func (r Repo) PushChart(chartpath string, force, retry bool) error {
 	}
 
 	if !i.Has(chart.Metadata.Name, chart.Metadata.Version) {
-		err := r.updateIndexFile(i, chartpath, chart)
+		err := r.updateIndexFile(i, chartpath, chart, public, publicURL)
 		if err == ErrIndexOutOfDate && retry {
 			for err == ErrIndexOutOfDate {
 				i, err = r.indexFile()
 				if err != nil {
 					return errors.Wrap(err, "load index file")
 				}
-				err = r.updateIndexFile(i, chartpath, chart)
+				err = r.updateIndexFile(i, chartpath, chart, public, publicURL)
 			}
 		}
 		if err != nil {
@@ -300,7 +300,7 @@ func (r Repo) uploadChart(chartpath string) error {
 	return nil
 }
 
-func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.Chart) error {
+func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.Chart, public bool, publicURL string) error {
 	log := logger()
 	hash, err := provenance.DigestFile(chartpath)
 	if err != nil {
@@ -308,8 +308,23 @@ func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.
 	}
 	_, fname := filepath.Split(chartpath)
 	log.Debugf("indexing chart '%s-%s' as '%s' (base url: %s)", chart.Metadata.Name, chart.Metadata.Version, fname, r.entry.URL)
-	i.Add(chart.GetMetadata(), fname, r.entry.URL, hash)
+	url, _ := getURL(r.entry.URL, public, publicURL)
+	i.Add(chart.GetMetadata(), fname, url, hash)
+
 	return r.uploadIndexFile(i)
+}
+
+func getURL(base string, public bool, publicURL string) (string, error) {
+	baseURL, err := url.Parse(base)
+	if err != nil {
+		return "", err
+	}
+	if public && publicURL != "" {
+		return publicURL, nil
+	} else if public {
+		return fmt.Sprintf("https://%s.storage.googleapis.com/%s", baseURL.Host, baseURL.Path), nil
+	}
+	return baseURL.String(), nil
 }
 
 func resolveReference(base, p string) (string, error) {

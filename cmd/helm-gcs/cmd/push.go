@@ -26,8 +26,10 @@ import (
 )
 
 var (
-	flagForce bool
-	flagRetry bool
+	flagForce     bool
+	flagRetry     bool
+	flagPublic    bool
+	flagPublicURL string
 )
 
 var pushCmd = &cobra.Command{
@@ -41,7 +43,7 @@ var pushCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return r.PushChart(chartpath, flagForce, flagRetry)
+		return r.PushChart(chartpath, flagForce, flagRetry, flagPublic, flagPublicURL)
 	},
 }
 
@@ -49,4 +51,6 @@ func init() {
 	rootCmd.AddCommand(pushCmd)
 	pushCmd.Flags().BoolVar(&flagForce, "force", false, "upload the chart even if already indexed")
 	pushCmd.Flags().BoolVar(&flagRetry, "retry", false, "retry if the index changed")
+	pushCmd.Flags().BoolVar(&flagPublic, "public", false, "expose HTTP URL instead of default gs:// for public buckets")
+	pushCmd.Flags().StringVar(&flagPublicURL, "publicUrl", "", "used with --public to overwrite google storage default url")
 }

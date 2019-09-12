@@ -34,37 +34,12 @@
   version = "v1.4.2"
 
 [[projects]]
-  digest = "1:ec66ad050342a3573ed2f5a4337d51b4c6d5d2a717cc6c9ecf86b081235a5759"
-  name = "github.com/cyphar/filepath-securejoin"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "a261ee33d7a517f054effbf451841abaafe3e0fd"
-  version = "v0.2.2"
-
-[[projects]]
   digest = "1:2cd7915ab26ede7d95b8749e6b1f933f1c6d5398030684e6505940a10f31cfda"
   name = "github.com/ghodss/yaml"
   packages = ["."]
   pruneopts = "UT"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
-
-[[projects]]
-  digest = "1:9ae31ce33b4bab257668963e844d98765b44160be4ee98cafc44637a213e530d"
-  name = "github.com/gobwas/glob"
-  packages = [
-    ".",
-    "compiler",
-    "match",
-    "syntax",
-    "syntax/ast",
-    "syntax/lexer",
-    "util/runes",
-    "util/strings",
-  ]
-  pruneopts = "UT"
-  revision = "5ccd90ef52e1e632236f7326478d4faa74f99438"
-  version = "v0.2.3"
 
 [[projects]]
   digest = "1:835c6b6a0c663019e88ea84e84867377b0f259dd6b620232533a680ec3e1dce4"
@@ -407,6 +382,29 @@
   version = "v2.2.2"
 
 [[projects]]
+  digest = "1:2bf84c70dda6afb69957c9472bead4efb965e8a756a7c6c90f36d5b51db24300"
+  name = "helm.sh/helm"
+  packages = [
+    "internal/ignore",
+    "internal/sympath",
+    "internal/tlsutil",
+    "internal/urlutil",
+    "internal/version",
+    "pkg/chart",
+    "pkg/chart/loader",
+    "pkg/cli",
+    "pkg/getter",
+    "pkg/helmpath",
+    "pkg/helmpath/xdg",
+    "pkg/plugin",
+    "pkg/provenance",
+    "pkg/repo",
+  ]
+  pruneopts = "UT"
+  revision = "5cb923eecbe80d1ad76399aee234717c11931d9a"
+  version = "v3.0.0-beta.3"
+
+[[projects]]
   digest = "1:e7f29d557575410f09b303a6270a20f17b2dcb69d3bbc4d71d89f5d8e927416d"
   name = "honnef.co/go/tools"
   packages = [
@@ -437,43 +435,20 @@
   version = "2019.1.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:0e8d6e7db54dd63de1caa7e00306a9d44c658287cf59fba915218a69e39f5de1"
-  name = "k8s.io/apimachinery"
-  packages = ["pkg/version"]
-  pruneopts = "UT"
-  revision = "d9689afd32c17f0eaeeee0916a563fc8c7a1d0e7"
-
-[[projects]]
   digest = "1:bf83d8940d59a175dad5ba323b47c6e62b3ba2dc9b2d449f629288deeeeb6582"
   name = "k8s.io/client-go"
   packages = ["util/homedir"]
   pruneopts = "UT"
-  revision = "6ee68ca5fd8355d024d02f9db0b3b667e8357a0f"
-  version = "v11.0.0"
+  revision = "8e956561bbf57253b1d19c449d0f24e8cb18d467"
+  version = "kubernetes-1.15.1"
 
 [[projects]]
-  digest = "1:4b2d945667dd985543613241fe12afeb1cebd43459d8a44d740d7c39e3af97c5"
-  name = "k8s.io/helm"
-  packages = [
-    "pkg/chartutil",
-    "pkg/getter",
-    "pkg/helm/environment",
-    "pkg/helm/helmpath",
-    "pkg/ignore",
-    "pkg/plugin",
-    "pkg/proto/hapi/chart",
-    "pkg/proto/hapi/version",
-    "pkg/provenance",
-    "pkg/repo",
-    "pkg/sympath",
-    "pkg/tlsutil",
-    "pkg/urlutil",
-    "pkg/version",
-  ]
+  digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
+  name = "sigs.k8s.io/yaml"
+  packages = ["."]
   pruneopts = "UT"
-  revision = "05811b84a3f93603dd6c2fcfe57944dfa7ab7fd0"
-  version = "v2.14.0"
+  revision = "fd68e9863619f6ec2fdd8625fe1f02e7c877e480"
+  version = "v1.1.0"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -486,12 +461,11 @@
     "github.com/spf13/cobra",
     "google.golang.org/api/googleapi",
     "google.golang.org/api/option",
-    "k8s.io/helm/pkg/chartutil",
-    "k8s.io/helm/pkg/helm/environment",
-    "k8s.io/helm/pkg/helm/helmpath",
-    "k8s.io/helm/pkg/proto/hapi/chart",
-    "k8s.io/helm/pkg/provenance",
-    "k8s.io/helm/pkg/repo",
+    "helm.sh/helm/pkg/chart",
+    "helm.sh/helm/pkg/chart/loader",
+    "helm.sh/helm/pkg/helmpath",
+    "helm.sh/helm/pkg/provenance",
+    "helm.sh/helm/pkg/repo",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

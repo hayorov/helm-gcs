@@ -13,16 +13,16 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/ghodss/yaml"
-	"github.com/hayorov/helm-gcs/pkg/gcs"
+	"github.com/hd-rk/helm-gcs/pkg/gcs"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/helm/environment"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/provenance"
-	"k8s.io/helm/pkg/repo"
+
+	"helm.sh/helm/pkg/chart"
+	"helm.sh/helm/pkg/chart/loader"
+	"helm.sh/helm/pkg/helmpath"
+	"helm.sh/helm/pkg/provenance"
+	"helm.sh/helm/pkg/repo"
 )
 
 var (
@@ -114,7 +114,7 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 	}
 
 	log.Debugf("load chart \"%s\" (force=%t, retry=%t, public=%t)", chartpath, force, retry, public)
-	chart, err := chartutil.Load(chartpath)
+	chart, err := loader.Load(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "load chart")
 	}
@@ -309,7 +309,7 @@ func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.
 	_, fname := filepath.Split(chartpath)
 	log.Debugf("indexing chart '%s-%s' as '%s' (base url: %s)", chart.Metadata.Name, chart.Metadata.Version, fname, r.entry.URL)
 	url, _ := getURL(r.entry.URL, public, publicURL)
-	i.Add(chart.GetMetadata(), fname, url, hash)
+	i.Add(chart.Metadata, fname, url, hash)
 
 	return r.uploadIndexFile(i)
 }
@@ -338,21 +338,20 @@ func resolveReference(base, p string) (string, error) {
 
 func retrieveRepositoryEntry(name string) (*repo.Entry, error) {
 	log := logger()
-	helmHome := os.Getenv("HELM_HOME")
-	if helmHome == "" {
-		helmHome = environment.DefaultHelmHome
-	}
-	log.Debugf("helm home: %s", helmHome)
-	h := helmpath.Home(helmHome)
-	repoFile, err := repo.LoadRepositoriesFile(h.RepositoryFile())
+
+	log.Debugf("helm repo file: %s", helmpath.ConfigPath("repositories.yaml"))
+
+	repoFile, err := repo.LoadFile(helmpath.ConfigPath("repositories.yaml"))
 	if err != nil {
 		return nil, errors.Wrap(err, "load")
 	}
+
 	for _, r := range repoFile.Repositories {
 		if r.Name == name {
 			return r, nil
 		}
 	}
+
 	return nil, errors.Wrapf(err, "repository \"%s\" does not exist", name)
 }
 

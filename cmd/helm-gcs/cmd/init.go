@@ -21,7 +21,7 @@
 package cmd
 
 import (
-	"github.com/hayorov/helm-gcs/pkg/repo"
+	"github.com/hd-rk/helm-gcs/pkg/repo"
 	"github.com/spf13/cobra"
 )
 

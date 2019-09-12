@@ -18,12 +18,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
 
-	// "k8s.io/helm/pkg/provenance"
-	// "k8s.io/helm/pkg/proto/hapi/chart"
-	// "k8s.io/helm/pkg/chartutil"
-	// "k8s.io/helm/pkg/repo"
-	// "k8s.io/helm/pkg/helm/helmpath"
-
 	"helm.sh/helm/pkg/chart"
 	"helm.sh/helm/pkg/chart/loader"
 	"helm.sh/helm/pkg/helmpath"
@@ -359,23 +353,6 @@ func retrieveRepositoryEntry(name string) (*repo.Entry, error) {
 	}
 
 	return nil, errors.Wrapf(err, "repository \"%s\" does not exist", name)
-
-	// helmHome := os.Getenv("HELM_HOME")
-	// if helmHome == "" {
-	// 	helmHome = environment.DefaultHelmHome
-	// }
-	// log.Debugf("helm home: %s", helmHome)
-	// h := helmpath.Home(helmHome)
-	// repoFile, err := repo.LoadRepositoriesFile(h.RepositoryFile())
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "load")
-	// }
-	// for _, r := range repoFile.Repositories {
-	// 	if r.Name == name {
-	// 		return r, nil
-	// 	}
-	// }
-	// return nil, errors.Wrapf(err, "repository \"%s\" does not exist", name)
 }
 
 func logger() *logrus.Entry {

@@ -32,6 +32,7 @@ var (
 
 	// Debug is used to activate log output
 	Debug bool
+	log   = logger()
 )
 
 // Repo manages Helm repositories on Google Cloud Storage.
@@ -46,7 +47,7 @@ type Repo struct {
 func New(path string, gcs *storage.Client) (*Repo, error) {
 	indexFileURL, err := resolveReference(path, "index.yaml")
 	if err != nil {
-		return nil, errors.Wrap(err, "resolve reference")
+		return nil, errors.Wrap(err, "resolve index reference")
 	}
 	return &Repo{
 		entry:        nil,
@@ -60,15 +61,12 @@ func New(path string, gcs *storage.Client) (*Repo, error) {
 func Load(name string, gcs *storage.Client) (*Repo, error) {
 	entry, err := retrieveRepositoryEntry(name)
 	if err != nil {
-		return nil, errors.Wrap(err, "entry")
-	}
-	if entry == nil {
-		return nil, fmt.Errorf("repository \"%s\" not found. Make sure you add it to helm", name)
+		return nil, errors.Wrap(err, "repo entry")
 	}
 
 	indexFileURL, err := resolveReference(entry.URL, "index.yaml")
 	if err != nil {
-		return nil, errors.Wrap(err, "resolve reference")
+		return nil, errors.Wrap(err, "resolve index reference")
 	}
 
 	return &Repo{
@@ -78,10 +76,10 @@ func Load(name string, gcs *storage.Client) (*Repo, error) {
 	}, nil
 }
 
-// Create creates a new repository on GCS.
+// Create creates a new repository on GCS by uploading a blank index.yaml file.
 // This function is idempotent.
 func Create(r *Repo) error {
-	log := logger()
+	// log := logger()
 	log.Debugf("create a repository with index file at %s", r.indexFileURL)
 
 	o, err := gcs.Object(r.gcs, r.indexFileURL)
@@ -107,7 +105,7 @@ func Create(r *Repo) error {
 // The push will fail if the repository is updated at the same time, use "retry" to automatically reload
 // the index of the repository.
 func (r Repo) PushChart(chartpath string, force, retry bool, public bool, publicURL string) error {
-	log := logger()
+	// log := logger()
 	i, err := r.indexFile()
 	if err != nil {
 		return errors.Wrap(err, "load index file")
@@ -124,21 +122,21 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 		return fmt.Errorf("chart %s-%s already indexed. Use --force to still upload the chart", chart.Metadata.Name, chart.Metadata.Version)
 	}
 
-	if !i.Has(chart.Metadata.Name, chart.Metadata.Version) {
-		err := r.updateIndexFile(i, chartpath, chart, public, publicURL)
-		if err == ErrIndexOutOfDate && retry {
-			for err == ErrIndexOutOfDate {
-				i, err = r.indexFile()
-				if err != nil {
-					return errors.Wrap(err, "load index file")
-				}
-				err = r.updateIndexFile(i, chartpath, chart, public, publicURL)
+	err = r.updateIndexFile(i, chartpath, chart, public, publicURL)
+	if err == ErrIndexOutOfDate && retry {
+		for err == ErrIndexOutOfDate {
+			i, err = r.indexFile()
+			if err != nil {
+				return errors.Wrap(err, "load index file")
 			}
-		}
-		if err != nil {
-			return errors.Wrap(err, "update index file")
+			err = r.updateIndexFile(i, chartpath, chart, public, publicURL)
 		}
 	}
+	if err != nil {
+		return errors.Wrap(err, "update index file")
+	}
+	// if !i.Has(chart.Metadata.Name, chart.Metadata.Version) {
+	// }
 
 	log.Debugf("upload file to GCS")
 	err = r.uploadChart(chartpath)
@@ -151,7 +149,7 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 // RemoveChart removes a chart from the repository
 // If version is empty, all version will be deleted.
 func (r Repo) RemoveChart(name, version string) error {
-	log := logger()
+	// log := logger()
 	log.Debugf("removing chart %s-%s", name, version)
 
 	index, err := r.indexFile()
@@ -202,7 +200,7 @@ func (r Repo) RemoveChart(name, version string) error {
 
 // uploadIndexFile update the index file on GCS.
 func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
-	log := logger()
+	// log := logger()
 	log.Debugf("push index file")
 	i.SortEntries()
 	o, err := gcs.Object(r.gcs, r.indexFileURL)
@@ -237,7 +235,7 @@ func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
 // indexFile retrieves the index file from GCS.
 // It will also retrieve the generation number of the file, for optimistic locking.
 func (r *Repo) indexFile() (*repo.IndexFile, error) {
-	log := logger()
+	// log := logger()
 	log.Debugf("load index file \"%s\"", r.indexFileURL)
 
 	// retrieve index file generation
@@ -273,7 +271,7 @@ func (r *Repo) indexFile() (*repo.IndexFile, error) {
 
 // uploadChart pushes a chart into the repository.
 func (r Repo) uploadChart(chartpath string) error {
-	log := logger()
+	// log := logger()
 	f, err := os.Open(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "open")
@@ -301,16 +299,33 @@ func (r Repo) uploadChart(chartpath string) error {
 }
 
 func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.Chart, public bool, publicURL string) error {
-	log := logger()
+	// log := logger()
 	hash, err := provenance.DigestFile(chartpath)
 	if err != nil {
-		return errors.Wrap(err, "digest file")
+		return errors.Wrap(err, "generate chart file digest")
 	}
-	_, fname := filepath.Split(chartpath)
-	log.Debugf("indexing chart '%s-%s' as '%s' (base url: %s)", chart.Metadata.Name, chart.Metadata.Version, fname, r.entry.URL)
-	url, _ := getURL(r.entry.URL, public, publicURL)
-	i.Add(chart.Metadata, fname, url, hash)
 
+	url, err := getURL(r.entry.URL, public, publicURL)
+	if err != nil {
+		return errors.Wrap(err, "get chart base url")
+	}
+
+	_, fname := filepath.Split(chartpath)
+	log.Debugf("indexing chart '%s-%s' as '%s' (base url: %s)", chart.Metadata.Name, chart.Metadata.Version, fname, url)
+
+	// Need to remove current version of chart if there is any
+	currentChart, _ := i.Get(chart.Metadata.Name, chart.Metadata.Version)
+	if currentChart != nil {
+		chartVersions := i.Entries[chart.Metadata.Name]
+		for idx, ver := range chartVersions {
+			if ver.Version == currentChart.Version {
+				i.Entries[chart.Metadata.Name] = append(chartVersions[:idx], chartVersions[idx+1:]...)
+				break
+			}
+		}
+	}
+
+	i.Add(chart.Metadata, fname, url, hash)
 	return r.uploadIndexFile(i)
 }
 
@@ -337,13 +352,13 @@ func resolveReference(base, p string) (string, error) {
 }
 
 func retrieveRepositoryEntry(name string) (*repo.Entry, error) {
-	log := logger()
+	// log := logger()
+	repoFilePath := helmpath.ConfigPath("repositories.yaml")
+	log.Debugf("helm repo file: %s", repoFilePath)
 
-	log.Debugf("helm repo file: %s", helmpath.ConfigPath("repositories.yaml"))
-
-	repoFile, err := repo.LoadFile(helmpath.ConfigPath("repositories.yaml"))
+	repoFile, err := repo.LoadFile(repoFilePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "load")
+		return nil, errors.Wrap(err, "load repo file")
 	}
 
 	for _, r := range repoFile.Repositories {
@@ -352,7 +367,7 @@ func retrieveRepositoryEntry(name string) (*repo.Entry, error) {
 		}
 	}
 
-	return nil, errors.Wrapf(err, "repository \"%s\" does not exist", name)
+	return nil, fmt.Errorf("repository \"%s\" does not exist", name)
 }
 
 func logger() *logrus.Entry {

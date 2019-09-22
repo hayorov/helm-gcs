@@ -166,7 +166,8 @@ func (r Repo) RemoveChart(name, version string) error {
 	for i, v := range vs {
 		if version == "" || version == v.Version {
 			log.Debugf("%s-%s will be deleted", name, v.Version)
-			urls = append(urls, v.URLs...)
+			chartURL := fmt.Sprintf("%s/%s-%s.tgz", r.entry.URL, name, v.Version)
+			urls = append(urls, chartURL)
 		}
 		if version == v.Version {
 			index.Entries[name] = append(vs[:i], vs[i+1:]...)

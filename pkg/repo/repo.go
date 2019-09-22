@@ -148,10 +148,11 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 
 // RemoveChart removes a chart from the repository
 // If version is empty, all version will be deleted.
-func (r Repo) RemoveChart(name, version string) error {
+func (r Repo) RemoveChart(name, version string, retry bool) error {
 	// log := logger()
 	log.Debugf("removing chart %s-%s", name, version)
 
+removeChart:
 	index, err := r.indexFile()
 	if err != nil {
 		return errors.Wrap(err, "index")
@@ -179,6 +180,10 @@ func (r Repo) RemoveChart(name, version string) error {
 	}
 
 	err = r.uploadIndexFile(index)
+	if err == ErrIndexOutOfDate && retry {
+		goto removeChart
+	}
+
 	if err != nil {
 		return err
 	}

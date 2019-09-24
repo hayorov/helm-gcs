@@ -25,7 +25,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var flagVersion string
+var (
+	flagVersion string
+	flagRmRetry bool
+)
 
 var rmCmd = &cobra.Command{
 	Use:     "rm [chart] [repository]",
@@ -40,11 +43,12 @@ If no specific version is given, all versions will be removed.`,
 		if err != nil {
 			return err
 		}
-		return r.RemoveChart(chart, flagVersion)
+		return r.RemoveChart(chart, flagVersion, flagRmRetry)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(rmCmd)
 	rmCmd.Flags().StringVarP(&flagVersion, "version", "v", "", "version of the chart to remove")
+	rmCmd.Flags().BoolVar(&flagRmRetry, "retry", false, "retry if the index changed")
 }

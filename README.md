@@ -1,12 +1,15 @@
-helm-gcs has a new owner [@hayorov](https://github.com/hayorov) and **more maintainers WANTED**, please [contact me](mailto:i@hayorov.ru) for details.
-
 # helm-gcs for Helm 3
 
-`helm-gcs` is a [helm](https://github.com/kubernetes/helm) plugin that allows you to manage private helm repositories on [Google Cloud Storage](https://cloud.google.com/storage/) aka buckets.
+`helm-gcs` is a [helm](https://github.com/helm/helm) plugin that allows you to manage private helm repositories on [Google Cloud Storage](https://cloud.google.com/storage/) aka buckets.
+
+### NOTICE
+
+The plugin hosted in this repo [hd-rk/helm-gcs](https://github.com/hd-rk/helm-gcs) has been patched to work with Helm 3.
+The minimum version is `0.3.0`.
+
+For Helm 2 compatible plugin, please use the original plugin [hayorov/helm-gcs](https://github.com/hayorov/helm-gcs)
 
 ## Installation
-
-Helm 3 is supported in helm-gcs version 0.3.0 and up.
 
 Install the stable version:
 ```shell

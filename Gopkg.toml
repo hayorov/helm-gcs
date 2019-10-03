@@ -50,8 +50,8 @@
   name = "google.golang.org/api"
 
 [[constraint]]
-  name = "k8s.io/helm"
-  version = "2.9.0"
+  name = "helm.sh/helm"
+  version = "3.0.0-beta.3"
 
 [prune]
   go-tests = true

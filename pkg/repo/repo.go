@@ -62,8 +62,8 @@ func Load(name string, gcs *storage.Client) (*Repo, error) {
 	entry, err := retrieveRepositoryEntry(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "entry")
-	}	
-	if entry == nil {	
+	}
+	if entry == nil {
 		return nil, fmt.Errorf("repository \"%s\" not found. Make sure you add it to helm", name)
 	}
 

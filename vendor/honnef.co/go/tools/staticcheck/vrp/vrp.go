@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"honnef.co/go/tools/lint"
 	"honnef.co/go/tools/ssa"
 )
 
@@ -291,7 +292,7 @@ func BuildGraph(f *ssa.Function) *Graph {
 			case *ssa.Call:
 				if static := ins.Common().StaticCallee(); static != nil {
 					if fn, ok := static.Object().(*types.Func); ok {
-						switch fn.FullName() {
+						switch lint.FuncName(fn) {
 						case "bytes.Index", "bytes.IndexAny", "bytes.IndexByte",
 							"bytes.IndexFunc", "bytes.IndexRune", "bytes.LastIndex",
 							"bytes.LastIndexAny", "bytes.LastIndexByte", "bytes.LastIndexFunc",
@@ -721,16 +722,22 @@ func (g *Graph) widen(c Constraint, consts []Z) bool {
 		}
 		nlc := NInfinity
 		nuc := PInfinity
-		for _, co := range consts {
-			if co.Cmp(ni.Lower) <= 0 {
-				nlc = co
-				break
+
+		// Don't get stuck widening for an absurd amount of time due
+		// to an excess number of constants, as may be present in
+		// table-based scanners.
+		if len(consts) < 1000 {
+			for _, co := range consts {
+				if co.Cmp(ni.Lower) <= 0 {
+					nlc = co
+					break
+				}
 			}
-		}
-		for _, co := range consts {
-			if co.Cmp(ni.Upper) >= 0 {
-				nuc = co
-				break
+			for _, co := range consts {
+				if co.Cmp(ni.Upper) >= 0 {
+					nuc = co
+					break
+				}
 			}
 		}
 

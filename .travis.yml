@@ -1,11 +1,11 @@
 language: go
 
 go:
-  - "1.12.x"
+  - "1.13"
 
 # Skip the install step. Don't `go get` dependencies. Only build with the
 # code in vendor/
-# install: true
+install: true
 
 # Don't email me the results of the test runs.
 notifications:
@@ -15,7 +15,7 @@ notifications:
 # flunk the build and immediately stop. It's sorta like having
 # set -e enabled in bash.
 before_script:
-  - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/) # All the .go files, excluding vendor/
+  - GO_FILES=$(find . -iname '*.go' -type f) # All the .go files, excluding vendor/
   - go get -u golang.org/x/lint/golint # Linter
   - go get github.com/fzipp/gocyclo
 
@@ -23,8 +23,6 @@ before_script:
 # in a modern Go project.
 script:
   - test -z $(gofmt -s -l $GO_FILES) # Fail if a .go file hasn't been formatted with gofmt
-  - go test -v -race ./... # Run all the tests with the race detector enabled
-  - go vet ./... # go vet is the official Go static analyzer
   - gocyclo -over 19 cmd pkg # forbid code with huge/complex functions
   - golint -set_exit_status $(go list ./...) # one last linter
-  - go build cmd/helm-gcs/main.go # compilation
+  - GO111MODULE=on go build cmd/helm-gcs/main.go # compilation

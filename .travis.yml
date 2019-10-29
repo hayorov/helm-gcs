@@ -23,6 +23,8 @@ before_script:
 # in a modern Go project.
 script:
   - test -z $(gofmt -s -l $GO_FILES) # Fail if a .go file hasn't been formatted with gofmt
+  - go test -v -race ./... # Run all the tests with the race detector enabled
+  - go vet ./... # go vet is the official Go static analyzer
   - gocyclo -over 19 cmd pkg # forbid code with huge/complex functions
   - golint -set_exit_status $(go list ./...) # one last linter
-  - GO111MODULE=on go build cmd/helm-gcs/main.go # compilation
+  - go build cmd/helm-gcs/main.go # compilation

@@ -14,7 +14,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/ghodss/yaml"
-	"github.com/hd-rk/helm-gcs/pkg/gcs"
+	"github.com/hayorov/helm-gcs/pkg/gcs"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"

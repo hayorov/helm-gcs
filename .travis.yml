@@ -1,11 +1,11 @@
 language: go
 
 go:
-  - "1.12.x"
+  - "1.13"
 
 # Skip the install step. Don't `go get` dependencies. Only build with the
 # code in vendor/
-# install: true
+install: true
 
 # Don't email me the results of the test runs.
 notifications:
@@ -15,7 +15,7 @@ notifications:
 # flunk the build and immediately stop. It's sorta like having
 # set -e enabled in bash.
 before_script:
-  - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/) # All the .go files, excluding vendor/
+  - GO_FILES=$(find . -iname '*.go' -type f) # All the .go files, excluding vendor/
   - go get -u golang.org/x/lint/golint # Linter
   - go get github.com/fzipp/gocyclo
 

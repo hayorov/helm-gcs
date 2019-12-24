@@ -20,7 +20,7 @@
 
 package main
 
-import "github.com/hd-rk/helm-gcs/cmd/helm-gcs/cmd"
+import "github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd"
 
 func main() {
 	cmd.Execute()

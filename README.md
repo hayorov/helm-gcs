@@ -1,3 +1,5 @@
+## WARNING: master switched to HELM 3
+### for helm 2 use `install ... --version 0.2.2`
 <p align="center">
 	<img src="https://raw.githubusercontent.com/hayorov/helm-gcs/master/assets/helm-gcs-logo.png" alt="helm-gcs logo"/>
 </p>

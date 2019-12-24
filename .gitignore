@@ -16,3 +16,7 @@
 # helm-gcs
 bin/
 dist/
+
+vendor
+
+.idea

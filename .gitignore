@@ -18,3 +18,5 @@ bin/
 dist/
 
 vendor
+
+.idea

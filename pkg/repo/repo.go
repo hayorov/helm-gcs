@@ -357,7 +357,7 @@ func resolveReference(base, p string) (string, error) {
 }
 
 func retrieveRepositoryEntry(name string) (*repo.Entry, error) {
-	repoFilePath := helmpath.ConfigPath("repositories.yaml")
+	repoFilePath := envOr("HELM_REPOSITORY_CONFIG", helmpath.ConfigPath("repositories.yaml"))
 	log.Debugf("helm repo file: %s", repoFilePath)
 
 	repoFile, err := repo.LoadFile(repoFilePath)
@@ -383,4 +383,11 @@ func logger() *logrus.Entry {
 	l.SetLevel(level)
 	l.Formatter = &logrus.TextFormatter{}
 	return logrus.NewEntry(l)
+}
+
+func envOr(name, def string) string {
+	if v, ok := os.LookupEnv(name); ok {
+		return v
+	}
+	return def
 }

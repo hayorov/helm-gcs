@@ -90,7 +90,8 @@ func Create(r *Repo) error {
 	_, err = o.NewReader(context.Background())
 	if err == storage.ErrObjectNotExist {
 		i := repo.NewIndexFile()
-		return r.uploadIndexFile(i)
+		// default false for no index cache as it is a new file in GCS bucket
+		return r.uploadIndexFile(i, false)
 	} else if err == nil {
 		log.Debugf("file %s already exists", r.indexFileURL)
 		return nil
@@ -104,7 +105,7 @@ func Create(r *Repo) error {
 // If the version of the chart is already indexed, it won't be uploaded unless "force" is set to true.
 // The push will fail if the repository is updated at the same time, use "retry" to automatically reload
 // the index of the repository.
-func (r Repo) PushChart(chartpath string, force, retry bool, public bool, publicURL string) error {
+func (r Repo) PushChart(chartpath string, force, retry, public, noIndexCache bool, publicURL string) error {
 	i, err := r.indexFile()
 	if err != nil {
 		return errors.Wrap(err, "load index file")
@@ -115,20 +116,19 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 	if err != nil {
 		return errors.Wrap(err, "load chart")
 	}
-
 	log.Debugf("chart loaded: %s-%s", chart.Metadata.Name, chart.Metadata.Version)
 	if i.Has(chart.Metadata.Name, chart.Metadata.Version) && !force {
 		return fmt.Errorf("chart %s-%s already indexed. Use --force to still upload the chart", chart.Metadata.Name, chart.Metadata.Version)
 	}
 
-	err = r.updateIndexFile(i, chartpath, chart, public, publicURL)
+	err = r.updateIndexFile(i, chartpath, chart, public, noIndexCache, publicURL)
 	if err == ErrIndexOutOfDate && retry {
 		for err == ErrIndexOutOfDate {
 			i, err = r.indexFile()
 			if err != nil {
 				return errors.Wrap(err, "load index file")
 			}
-			err = r.updateIndexFile(i, chartpath, chart, public, publicURL)
+			err = r.updateIndexFile(i, chartpath, chart, public, noIndexCache, publicURL)
 		}
 	}
 	if err != nil {
@@ -145,7 +145,7 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 
 // RemoveChart removes a chart from the repository
 // If version is empty, all version will be deleted.
-func (r Repo) RemoveChart(name, version string, retry bool) error {
+func (r Repo) RemoveChart(name, version string, retry, noIndexCache bool) error {
 	log.Debugf("removing chart %s-%s", name, version)
 
 removeChart:
@@ -177,7 +177,7 @@ removeChart:
 		delete(index.Entries, name)
 	}
 
-	err = r.uploadIndexFile(index)
+	err = r.uploadIndexFile(index, noIndexCache)
 	if err == ErrIndexOutOfDate && retry {
 		goto removeChart
 	}
@@ -203,7 +203,7 @@ removeChart:
 }
 
 // uploadIndexFile update the index file on GCS.
-func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
+func (r Repo) uploadIndexFile(i *repo.IndexFile, noIndexCache bool) error {
 	log.Debugf("push index file")
 
 	i.SortEntries()
@@ -216,6 +216,10 @@ func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
 	}
 
 	w := o.NewWriter(context.Background())
+	if noIndexCache {
+		w.CacheControl = "no-cache, max-age=0"
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "writer")
 	}
@@ -302,7 +306,7 @@ func (r Repo) uploadChart(chartpath string) error {
 	return nil
 }
 
-func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.Chart, public bool, publicURL string) error {
+func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.Chart, public, noIndexCache bool, publicURL string) error {
 	hash, err := provenance.DigestFile(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "generate chart file digest")
@@ -331,7 +335,7 @@ func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.
 	}
 
 	i.Add(chart.Metadata, fname, url, hash)
-	return r.uploadIndexFile(i)
+	return r.uploadIndexFile(i, noIndexCache)
 }
 
 func getURL(base string, public bool, publicURL string) (string, error) {

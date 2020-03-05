@@ -26,8 +26,9 @@ import (
 )
 
 var (
-	flagVersion string
-	flagRmRetry bool
+	flagVersion        string
+	flagRmRetry        bool
+	flagRmNoIndexCache bool
 )
 
 var rmCmd = &cobra.Command{
@@ -43,7 +44,7 @@ If no specific version is given, all versions will be removed.`,
 		if err != nil {
 			return err
 		}
-		return r.RemoveChart(chart, flagVersion, flagRmRetry)
+		return r.RemoveChart(chart, flagVersion, flagRmRetry, flagRmNoIndexCache)
 	},
 }
 
@@ -51,4 +52,5 @@ func init() {
 	rootCmd.AddCommand(rmCmd)
 	rmCmd.Flags().StringVarP(&flagVersion, "version", "v", "", "version of the chart to remove")
 	rmCmd.Flags().BoolVar(&flagRmRetry, "retry", false, "retry if the index changed")
+	rmCmd.Flags().BoolVar(&flagNoIndexCache, "noIndexCache", false, "set Cache-Control to no-cache and max-age to 0, avoids index.yaml being cached to speed up when new helm charts can be fetched")
 }

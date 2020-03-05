@@ -26,10 +26,11 @@ import (
 )
 
 var (
-	flagForce     bool
-	flagRetry     bool
-	flagPublic    bool
-	flagPublicURL string
+	flagForce        bool
+	flagRetry        bool
+	flagPublic       bool
+	flagNoIndexCache bool
+	flagPublicURL    string
 )
 
 var pushCmd = &cobra.Command{
@@ -43,7 +44,7 @@ var pushCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return r.PushChart(chartpath, flagForce, flagRetry, flagPublic, flagPublicURL)
+		return r.PushChart(chartpath, flagForce, flagRetry, flagPublic, flagNoIndexCache, flagPublicURL)
 	},
 }
 
@@ -51,6 +52,7 @@ func init() {
 	rootCmd.AddCommand(pushCmd)
 	pushCmd.Flags().BoolVar(&flagForce, "force", false, "upload the chart even if already indexed")
 	pushCmd.Flags().BoolVar(&flagRetry, "retry", false, "retry if the index changed")
+	pushCmd.Flags().BoolVar(&flagNoIndexCache, "noIndexCache", false, "set Cache-Control to no-cache and max-age to 0, avoids index.yaml being cached to speed up when new helm charts can be fetched")
 	pushCmd.Flags().BoolVar(&flagPublic, "public", false, "expose HTTP URL instead of default gs:// for public buckets")
 	pushCmd.Flags().StringVar(&flagPublicURL, "publicUrl", "", "used with --public to overwrite google storage default url")
 }

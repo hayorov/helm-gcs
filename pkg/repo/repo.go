@@ -219,6 +219,9 @@ func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
 	if err != nil {
 		return errors.Wrap(err, "writer")
 	}
+	// ensure index.yaml is not cached by GCS
+	w.CacheControl = "no-cache, max-age=0, no-transform"
+
 	b, err := yaml.Marshal(i)
 	if err != nil {
 		return errors.Wrap(err, "marshal")

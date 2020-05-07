@@ -40,7 +40,16 @@ else
 fi
 
 # Install bin
-rm -rf bin && mkdir bin && tar xzvf $filename -C bin > /dev/null && rm -f $filename
+rm -rf bin && mkdir bin
+
+tar xvf $filename -C bin > /dev/null 
+
+if [ $? -ne 0 ] then;
+    echo "Error installing helm-gcs while unpacking archive"
+    exit 1
+fi
+
+rm -f $filename
 
 echo "helm-gcs ${version} is correctly installed."
 echo

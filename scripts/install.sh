@@ -44,10 +44,9 @@ rm -rf bin && mkdir bin
 
 tar xvf $filename -C bin > /dev/null 
 
-if [ $? -ne 0 ] then;
+if $? -ne 0; then
     echo "Error installing helm-gcs while unpacking archive"
     exit 1
-fi
 
 rm -f $filename
 

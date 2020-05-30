@@ -40,7 +40,7 @@ else
 fi
 
 # Install bin
-rm -rf bin && mkdir bin && tar xzvf $filename -C bin > /dev/null && rm -f $filename
+rm -rf bin && mkdir bin && tar xvf $filename -C bin > /dev/null && rm -f $filename
 
 echo "helm-gcs ${version} is correctly installed."
 echo

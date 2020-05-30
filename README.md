@@ -17,7 +17,7 @@ $ helm plugin install https://github.com/hayorov/helm-gcs.git
 
 Install a specific version:
 ```shell
-$ helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.3.0
+$ helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.3.2
 ```
 
 ## Quick start

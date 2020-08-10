@@ -1,10 +1,12 @@
-## WARNING: master switched to HELM 3
-### for helm 2 use `install ... --version 0.2.2`
 <p align="center">
 	<img src="https://raw.githubusercontent.com/hayorov/helm-gcs/master/assets/helm-gcs-logo.png" alt="helm-gcs logo"/>
 </p>
 
-# helm-gcs [![Build Status](https://travis-ci.org/hayorov/helm-gcs.svg?branch=master)](https://travis-ci.org/hayorov/helm-gcs)
+# helm-gcs
+![Helm3 supported](https://img.shields.io/badge/Helm%203-supported-green)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/hayorov/helm-gcs)
+[![Build Status](https://travis-ci.org/hayorov/helm-gcs.svg?branch=master)](https://travis-ci.org/hayorov/helm-gcs)
+
 
 `helm-gcs` is a [helm](https://github.com/kubernetes/helm) plugin that allows you to manage private helm repositories on [Google Cloud Storage](https://cloud.google.com/storage/) aka buckets.
 
@@ -17,7 +19,7 @@ $ helm plugin install https://github.com/hayorov/helm-gcs.git
 
 Install a specific version:
 ```shell
-$ helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.3.2
+$ helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.3.5
 ```
 
 ## Quick start
@@ -50,9 +52,9 @@ To authenticate against GCS you can:
 
  -   Use the [application default credentials](https://cloud.google.com/sdk/gcloud/reference/auth/application-default/)
 
- -   Use a service account via the global flag `--service-account`
+ -   Use a service account via [`export GOOGLE_APPLICATION_CREDENTIALS=credentials.json` system variable](https://cloud.google.com/docs/authentication/getting-started)
 
-See [the GCP documentation](https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application) for more information.
+See [GCP documentation](https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application) for more information.
 
 
 ### Create a repository
@@ -124,6 +126,13 @@ $ helm gcs remove my-chart my-repository --version 0.1.0
 
 >   Don't forget to run `helm repo up` after you remove a chart.
 
-## Troubleshooting
+## Troubleshootin
 
 You can use the global flag `--debug`, or set `HELM_GCS_DEBUG=true` to get more informations. Please write an issue if you find any bug.
+
+## Helm versions
+
+Starting from 0.3 helm-gcs works with Helm 3, if you want to use it with Helm 2 please install the latest version that supports it
+```shell
+helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.2.2 # helm 2 compatible 
+```

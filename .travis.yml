@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - "1.13"
+  - "1.15"
 
 # Skip the install step. Don't `go get` dependencies. Only build with the
 # code in vendor/

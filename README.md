@@ -5,7 +5,7 @@
 # helm-gcs
 ![Helm3 supported](https://img.shields.io/badge/Helm%203-supported-green)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/hayorov/helm-gcs)
-[![Build Status](https://travis-ci.org/hayorov/helm-gcs.svg?branch=master)](https://travis-ci.org/hayorov/helm-gcs)
+[![Build Status](https://github.com/hayorov/helm-gcs/workflows/release/badge.svg)](https://github.com/hayorov/helm-gcs/releases/latest)
 
 
 `helm-gcs` is a [helm](https://github.com/kubernetes/helm) plugin that allows you to manage private helm repositories on [Google Cloud Storage](https://cloud.google.com/storage/) aka buckets.

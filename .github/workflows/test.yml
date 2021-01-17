@@ -1,9 +1,8 @@
 name: test
 
 on:
-  push:
-    tags:
-      - "*"
+  pull_request:
+    types: [synchronize]
 
 jobs:
   test:

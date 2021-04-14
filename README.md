@@ -3,21 +3,29 @@
 </p>
 
 # helm-gcs
+
 ![Helm3 supported](https://img.shields.io/badge/Helm%203-supported-green)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/hayorov/helm-gcs)
 [![Build Status](https://github.com/hayorov/helm-gcs/workflows/release/badge.svg)](https://github.com/hayorov/helm-gcs/releases/latest)
-
 
 `helm-gcs` is a [helm](https://github.com/kubernetes/helm) plugin that allows you to manage private helm repositories on [Google Cloud Storage](https://cloud.google.com/storage/) aka buckets.
 
 ## Installation
 
 Install the stable version:
+
 ```shell
 $ helm plugin install https://github.com/hayorov/helm-gcs.git
 ```
 
+Update to latest
+
+```shell
+# helm plugin update gcs
+```
+
 Install a specific version:
+
 ```shell
 $ helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.3.10
 ```
@@ -50,12 +58,11 @@ $ helm gcs rm chart repo-name
 
 To authenticate against GCS you can:
 
- -   Use the [application default credentials](https://cloud.google.com/sdk/gcloud/reference/auth/application-default/)
+- Use the [application default credentials](https://cloud.google.com/sdk/gcloud/reference/auth/application-default/)
 
- -   Use a service account via [`export GOOGLE_APPLICATION_CREDENTIALS=credentials.json` system variable](https://cloud.google.com/docs/authentication/getting-started)
+- Use a service account via [`export GOOGLE_APPLICATION_CREDENTIALS=credentials.json` system variable](https://cloud.google.com/docs/authentication/getting-started)
 
 See [GCP documentation](https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application) for more information.
-
 
 ### Create a repository
 
@@ -67,11 +74,12 @@ Then you have to initialize a repository at a specific location in your bucket:
 $ helm gcs init gs://your-bucket/path
 ```
 
->   You can create a repository anywhere in your bucket.
+> You can create a repository anywhere in your bucket.
 
->   This command does nothing if a repository already exists at the given location.
+> This command does nothing if a repository already exists at the given location.
 
 You can now add the repository to helm:
+
 ```shell
 $ helm repo add my-repository gs://your-bucket/path
 ```
@@ -79,9 +87,11 @@ $ helm repo add my-repository gs://your-bucket/path
 ### Push a chart
 
 Package the chart:
+
 ```shell
 $ helm package my-chart
 ```
+
 This will create a file `my-chart-<semver>.tgz`.
 
 Now, to push the chart to the repository `my-repository`:
@@ -91,6 +101,7 @@ $ helm gcs push my-chart-<semver>.tgz my-repository
 ```
 
 If you got this error:
+
 ```shell
 Error: update index file: index is out-of-date
 ```
@@ -106,9 +117,9 @@ Once the chart is uploaded, use helm to fetch it:
 $ helm fetch my-chart
 ```
 
->   This command does nothing if the same chart (name and version) already exists.
+> This command does nothing if the same chart (name and version) already exists.
 
->   Using `--retry` is highly recommended in a CI/CD environment.
+> Using `--retry` is highly recommended in a CI/CD environment.
 
 ### Remove a chart
 
@@ -124,7 +135,7 @@ To remove a specific version, simply use the `--version` flag:
 $ helm gcs remove my-chart my-repository --version 0.1.0
 ```
 
->   Don't forget to run `helm repo up` after you remove a chart.
+> Don't forget to run `helm repo up` after you remove a chart.
 
 ## Troubleshootin
 
@@ -133,6 +144,7 @@ You can use the global flag `--debug`, or set `HELM_GCS_DEBUG=true` to get more 
 ## Helm versions
 
 Starting from 0.3 helm-gcs works with Helm 3, if you want to use it with Helm 2 please install the latest version that supports it
+
 ```shell
-helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.2.2 # helm 2 compatible 
+helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.2.2 # helm 2 compatible
 ```

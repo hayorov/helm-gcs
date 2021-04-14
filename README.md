@@ -21,7 +21,7 @@ $ helm plugin install https://github.com/hayorov/helm-gcs.git
 Update to latest
 
 ```shell
-# helm plugin update gcs
+$ helm plugin update gcs
 ```
 
 Install a specific version:

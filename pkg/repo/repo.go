@@ -221,6 +221,9 @@ func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
 	// ensure index.yaml is not cached by GCS
 	w.CacheControl = "no-cache, max-age=0, no-transform"
 
+	// set the correct Content-Type ("text/yaml") for index.yaml file (solves issue #92)
+	w.ContentType = "text/yaml"
+
 	b, err := yaml.Marshal(i)
 	if err != nil {
 		return errors.Wrap(err, "marshal")

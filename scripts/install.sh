@@ -28,10 +28,10 @@ url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_$
 filename=`echo ${url} | sed -e "s/^.*\///g"`
 
 # Download archive
-if [ -n $(command -v curl) ]
+if [ -n "$(command -v curl)" ]
 then
     curl -sSL -O $url
-elif [ -n $(command -v wget) ]
+elif [ -n "$(command -v wget)" ]
 then
     wget -q $url
 else

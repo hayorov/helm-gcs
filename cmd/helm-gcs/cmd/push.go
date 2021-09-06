@@ -26,10 +26,12 @@ import (
 )
 
 var (
-	flagForce     bool
-	flagRetry     bool
-	flagPublic    bool
-	flagPublicURL string
+	flagForce      bool
+	flagRetry      bool
+	flagPublic     bool
+	flagPublicURL  string
+	flagBucketPath string
+	flagMetadata   map[string]string
 )
 
 var pushCmd = &cobra.Command{
@@ -43,7 +45,7 @@ var pushCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return r.PushChart(chartpath, flagForce, flagRetry, flagPublic, flagPublicURL)
+		return r.PushChart(chartpath, flagForce, flagRetry, flagPublic, flagPublicURL, flagBucketPath, flagMetadata)
 	},
 }
 
@@ -53,4 +55,6 @@ func init() {
 	pushCmd.Flags().BoolVar(&flagRetry, "retry", false, "retry if the index changed")
 	pushCmd.Flags().BoolVar(&flagPublic, "public", false, "expose HTTP URL instead of default gs:// for public buckets")
 	pushCmd.Flags().StringVar(&flagPublicURL, "publicUrl", "", "used with --public to overwrite google storage default url")
+	pushCmd.Flags().StringVar(&flagBucketPath, "bucketPath", "", "path inside the google bucket")
+	pushCmd.Flags().StringToStringVar(&flagMetadata, "metadata", nil, "comma seperated object metadata in the form of key=value")
 }

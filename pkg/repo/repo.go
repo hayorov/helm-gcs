@@ -103,7 +103,7 @@ func Create(r *Repo) error {
 // If the version of the chart is already indexed, it won't be uploaded unless "force" is set to true.
 // The push will fail if the repository is updated at the same time, use "retry" to automatically reload
 // the index of the repository.
-func (r Repo) PushChart(chartpath string, force, retry bool, public bool, publicURL string) error {
+func (r Repo) PushChart(chartpath string, force, retry bool, public bool, publicURL string, bucketPath string, metadata map[string]string) error {
 	i, err := r.indexFile()
 	if err != nil {
 		return errors.Wrap(err, "load index file")
@@ -120,14 +120,14 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 		return fmt.Errorf("chart %s-%s already indexed. Use --force to still upload the chart", chart.Metadata.Name, chart.Metadata.Version)
 	}
 
-	err = r.updateIndexFile(i, chartpath, chart, public, publicURL)
+	err = r.updateIndexFile(i, chartpath, chart, public, publicURL, bucketPath)
 	if err == ErrIndexOutOfDate && retry {
 		for err == ErrIndexOutOfDate {
 			i, err = r.indexFile()
 			if err != nil {
 				return errors.Wrap(err, "load index file")
 			}
-			err = r.updateIndexFile(i, chartpath, chart, public, publicURL)
+			err = r.updateIndexFile(i, chartpath, chart, public, publicURL, bucketPath)
 		}
 	}
 	if err != nil {
@@ -135,7 +135,7 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 	}
 
 	log.Debugf("upload file to GCS")
-	err = r.uploadChart(chartpath)
+	err = r.uploadChart(chartpath, metadata)
 	if err != nil {
 		return errors.Wrap(err, "write chart")
 	}
@@ -280,7 +280,7 @@ func (r *Repo) indexFile() (*repo.IndexFile, error) {
 }
 
 // uploadChart pushes a chart into the repository.
-func (r Repo) uploadChart(chartpath string) error {
+func (r Repo) uploadChart(chartpath string, metadata map[string]string) error {
 	f, err := os.Open(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "open")
@@ -295,11 +295,16 @@ func (r Repo) uploadChart(chartpath string) error {
 	if err != nil {
 		return errors.Wrap(err, "object")
 	}
+
 	w := o.NewWriter(context.Background())
+
+	w.Metadata = metadata
+
 	_, err = io.Copy(w, f)
 	if err != nil {
 		return errors.Wrap(err, "copy")
 	}
+
 	err = w.Close()
 	if err != nil {
 		return errors.Wrap(err, "close")
@@ -307,10 +312,14 @@ func (r Repo) uploadChart(chartpath string) error {
 	return nil
 }
 
-func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.Chart, public bool, publicURL string) error {
+func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.Chart, public bool, publicURL string, bucketPath string) error {
 	hash, err := provenance.DigestFile(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "generate chart file digest")
+	}
+
+	if bucketPath != "" {
+		r.entry.URL = fmt.Sprintf("%s/%s", r.entry.URL, bucketPath)
 	}
 
 	url, err := getURL(r.entry.URL, public, publicURL)

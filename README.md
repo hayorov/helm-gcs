@@ -100,6 +100,20 @@ Now, to push the chart to the repository `my-repository`:
 $ helm gcs push my-chart-<semver>.tgz my-repository
 ```
 
+Push the chart with additional option by providing metadata to the object :
+
+```shell
+$ helm gcs push my-chart-<semver>.tgz my-repository --metadata env=my-env,region=europe-west4
+```
+
+Push the chart with additional option by providing path inside bucket :
+
+This would allow us to structure the content inside the bucket, and stores at `gs://your-bucket/my-application/my-chart-<semver>.tgz`
+
+```shell
+$ helm gcs push my-chart-<semver>.tgz my-repository --bucketPath=my-application
+```
+
 If you got this error:
 
 ```shell

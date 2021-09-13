@@ -151,7 +151,7 @@ $ helm gcs remove my-chart my-repository --version 0.1.0
 
 > Don't forget to run `helm repo up` after you remove a chart.
 
-## Troubleshootin
+## Troubleshooting
 
 You can use the global flag `--debug`, or set `HELM_GCS_DEBUG=true` to get more informations. Please write an issue if you find any bug.
 

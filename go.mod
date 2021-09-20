@@ -10,4 +10,5 @@ require (
 	github.com/spf13/cobra v1.2.1
 	google.golang.org/api v0.57.0
 	helm.sh/helm/v3 v3.6.1
+	rsc.io/letsencrypt v0.0.3 // indirect
 )

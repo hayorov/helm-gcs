@@ -162,8 +162,7 @@ removeChart:
 	for i, v := range vs {
 		if version == "" || version == v.Version {
 			log.Debugf("%s-%s will be deleted", name, v.Version)
-			chartURL := fmt.Sprintf("%s/%s-%s.tgz", r.entry.URL, name, v.Version)
-			urls = append(urls, chartURL)
+			urls = append(urls, v.URLs...)
 		}
 		if version == v.Version {
 			vs[i] = vs[len(vs)-1]

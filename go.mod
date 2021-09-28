@@ -37,7 +37,7 @@ require (
 	golang.org/x/sys v0.0.0-20210921065528-437939a70204 // indirect
 	golang.org/x/term v0.0.0-20210916214954-140adaaadfaf // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/api v0.57.0
+	google.golang.org/api v0.58.0
 	google.golang.org/genproto v0.0.0-20210920155426-26f343e4c215 // indirect
 	helm.sh/helm/v3 v3.7.0
 	k8s.io/cli-runtime v0.22.2 // indirect

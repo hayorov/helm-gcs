@@ -23,6 +23,11 @@ then
     exit 1
 fi
 
+if [ "$arch" = 'aarch64' ]
+then
+    arch='arm64'
+fi
+
 url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_${version}_${os}_${arch}.tar.gz"
 
 filename=`echo ${url} | sed -e "s/^.*\///g"`

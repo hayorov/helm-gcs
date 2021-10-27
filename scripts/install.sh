@@ -17,8 +17,6 @@ esac
 
 arch=`uname -m`
 
-
-
 if echo "$os" | grep -qe '.*UNKNOWN.*'
 then
     echo "Unsupported OS / architecture: ${os}_${arch}"

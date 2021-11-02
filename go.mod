@@ -9,7 +9,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
 	google.golang.org/api v0.59.0
-	helm.sh/helm/v3 v3.7.0
+	helm.sh/helm/v3 v3.7.1
 )
 
 require (

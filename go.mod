@@ -9,7 +9,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.3.0
 	google.golang.org/api v0.65.0
-	helm.sh/helm/v3 v3.7.1
+	helm.sh/helm/v3 v3.7.2
 )
 
 require (
@@ -99,12 +99,12 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/api v0.22.2 // indirect
-	k8s.io/apimachinery v0.22.2 // indirect
-	k8s.io/cli-runtime v0.22.2 // indirect
-	k8s.io/client-go v0.22.2 // indirect
+	k8s.io/api v0.22.4 // indirect
+	k8s.io/apimachinery v0.22.4 // indirect
+	k8s.io/cli-runtime v0.22.4 // indirect
+	k8s.io/client-go v0.22.4 // indirect
 	k8s.io/klog/v2 v2.20.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20210929172449-94abcedd1aa4 // indirect
+	k8s.io/kube-openapi v0.0.0-20211109043538-20434351676c // indirect
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b // indirect
 	oras.land/oras-go v0.4.0 // indirect
 	sigs.k8s.io/kustomize/api v0.10.0 // indirect

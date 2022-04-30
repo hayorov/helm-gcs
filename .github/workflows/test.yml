@@ -9,32 +9,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Run Trivy vulnerability scanner in repo mode
+        uses: actions/checkout@v3
+      - name: Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "fs"
           ignore-unfixed: true
-          format: "template"
-          template: "@/contrib/sarif.tpl"
+          format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL"
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v1
+        uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: "trivy-results.sarif"
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.18
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
       - name: Series of tests
         run: |
           GO_FILES=$(find . -iname '*.go' -type f) # All the .go files, excluding vendor/
-          go get -u golang.org/x/lint/golint # Linter
-          go get github.com/fzipp/gocyclo/cmd/gocyclo
           test -z $(gofmt -s -l $GO_FILES) # Fail if a .go file hasn't been formatted with gofmt
           go test -v -race ./... # Run all the tests with the race detector enabled
           go vet ./... # go vet is the official Go static analyzer
-          gocyclo -over 19 cmd pkg # forbid code with huge/complex functions
-          golint -set_exit_status $(go list ./...) # one last linter
-          go build cmd/helm-gcs/main.go # compilation
+          go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+          /home/runner/go/bin/gocyclo -over 19 cmd pkg # forbid code with huge/complex functions
+          go build cmd/helm-gcs/main.go

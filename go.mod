@@ -11,6 +11,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
 	google.golang.org/api v0.73.0
 	helm.sh/helm/v3 v3.8.1
+	github.com/fzipp/gocyclo v0.5.1
 )
 
 require (

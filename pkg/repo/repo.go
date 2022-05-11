@@ -343,8 +343,8 @@ func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.
 		}
 	}
 
-	if err := i.MustAdd(chart.Metadata, fname, url, hash) {
-		return errors.Wrap(err, invalid entry for chart %q %q from %s", chart.Metadata.Name, chart.Metadata.Version, fname)
+	if err := i.MustAdd(chart.Metadata, fname, url, hash); err != nil {
+		return errors.Wrap(err, "invalid entry for chart %q %q from %s", chart.Metadata.Name, chart.Metadata.Version, fname)
 	}
 	return r.uploadIndexFile(i)
 }

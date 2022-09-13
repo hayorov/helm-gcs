@@ -357,7 +357,7 @@ func getURL(base string, public bool, publicURL string) (string, error) {
 	if public && publicURL != "" {
 		return publicURL, nil
 	} else if public {
-		return fmt.Sprintf("https://%s.storage.googleapis.com/%s", baseURL.Host, baseURL.Path), nil
+		return fmt.Sprintf("https://storage.googleapis.com/%s/%s", baseURL.Host, baseURL.Path), nil
 	}
 	return baseURL.String(), nil
 }

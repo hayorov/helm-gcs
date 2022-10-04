@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -14,7 +13,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/ghodss/yaml"
-	"github.com/hayorov/helm-gcs/pkg/gcs"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
@@ -23,6 +21,8 @@ import (
 	"helm.sh/helm/v3/pkg/helmpath"
 	"helm.sh/helm/v3/pkg/provenance"
 	"helm.sh/helm/v3/pkg/repo"
+
+	"github.com/hayorov/helm-gcs/pkg/gcs"
 )
 
 var (
@@ -264,7 +264,7 @@ func (r *Repo) indexFile() (*repo.IndexFile, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "reader")
 	}
-	b, err := ioutil.ReadAll(reader)
+	b, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, errors.Wrap(err, "read")
 	}

@@ -17,9 +17,13 @@ import (
 func NewClient(serviceAccountPath string) (*storage.Client, error) {
 	opts := []option.ClientOption{}
 	token := os.Getenv("GOOGLE_OAUTH_ACCESS_TOKEN")
+	envCreds := os.Getenv("GOOGLE_CREDENTIALS") // used by terraform google provider
+	ignoreEnvCreds := os.Getenv("HELM_GCS_IGNORE_TERRAFORM_CREDS")
 	if token != "" {
 		token := &oauth2.Token{AccessToken: token}
 		opts = append(opts, option.WithTokenSource(oauth2.StaticTokenSource(token)))
+	} else if envCreds != "" && ignoreEnvCreds != "true" {
+		opts = append(opts, option.WithCredentialsJSON([]byte(envCreds)))
 	} else if serviceAccountPath != "" {
 		opts = append(opts, option.WithCredentialsFile(serviceAccountPath))
 	}
@@ -30,7 +34,7 @@ func NewClient(serviceAccountPath string) (*storage.Client, error) {
 	return client, err
 }
 
-// Object retourne a new object handle for the given path
+// Object returns a new object handle for the given path
 func Object(client *storage.Client, path string) (*storage.ObjectHandle, error) {
 	bucket, path, err := splitPath(path)
 	if err != nil {

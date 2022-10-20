@@ -66,6 +66,8 @@ To authenticate against GCS you can:
 
 See [GCP documentation](https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application) for more information.
 
+See also the section on working inside Terraform below.
+
 ### Create a repository
 
 First, you need to [create a bucket on GCS](https://cloud.google.com/storage/docs/creating-buckets), which will be used by the plugin to store your charts.
@@ -164,3 +166,56 @@ Starting from 0.3 helm-gcs works with Helm 3, if you want to use it with Helm 2 
 ```shell
 helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.2.2 # helm 2 compatible
 ```
+
+## Working with Terraform
+
+It is possible to use the helm-gcs plugin along with the [Terraform Helm provider](https://registry.terraform.io/providers/hashicorp/helm/latest/docs), but you may need to pay special attention to your authentication configuration, and if you are using a remote execution environment such as Terraform Atlantis or Terraform Cloud you may need to perform some post-installation actions.
+
+To use helm-gcs with the Terraform Helm Provider, first you will need to install it inside your Terraform module; for example if your Terraform files live in `${HOME}/src/terraform`, you would create a plugins directory there and install into it:
+
+```shell
+mkdir "${HOME}/src/terraform/helm_plugins" && \
+  HELM_PLUGINS="${HOME}/src/terraform/helm_plugins" \
+  helm plugin install https://github.com/hayorov/helm-gcs.git 
+```
+
+Note: if the OS/architecture of your local machine differs from the environment in which Terraform will actually execute (e.g. you are editing on macOS/arm but Terraform executes in Linux/amd64 via Atlantis or Terraform Cloud), you will need to manually run the installer script again in order to install the correct binary and set the `HELM_OS` and `HELM_ARCH` environment variables to override automatic detection of the local os and architecture:
+
+```shell
+HELM_PLUGIN_DIR="${HOME}/src/terraform/helm_plugins/helm-gcs.git" \
+  HELM_OS="linux" \
+  HELM_ARCH="x86_64" \
+  "${HOME}/src/terraform/helm_plugins/helm-gcs.git/scripts/install.sh"
+```
+
+Once the plugin is installed, add its parent directory to the `plugins_path` attribute of your Helm provider definition:
+
+```hcl
+provider "helm" {
+   kubernetes {
+    host                   = "https://${google_container_cluster.default.endpoint}"
+    token                  = data.google_client_config.provider.access_token
+    cluster_ca_certificate = base64decode(google_container_cluster.default.master_auth[0].cluster_ca_certificate)
+  }
+  plugins_path = "${path.module}/helm_plugins"
+}
+```
+
+With this in place you should be able to install Helm charts from repositories in GCS:
+
+```hcl
+resource "helm_release" "my_chart" {
+  name       = "my-chart"
+  chart      = "my-chart"
+  repository = "gs://your-bucket/path"
+  timeout    = 600
+  replace    = true
+  atomic     = true
+}
+```
+
+### Authentication inside Terraform
+
+Terraform's [Google Cloud Platform Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs) adds an option to the [default](https://cloud.google.com/sdk/gcloud/reference/auth/application-default/) resolution method to determine your authentication credentials: if the environment variable `GOOGLE_CREDENTIALS` is set, it will attempt to read the JSON key file out of that environment variable. (Details [here](https://registry.terraform.io/providers/hashicorp/helm/latest/docs#authentication)) This is most commonly used with hosted Terraform execution environments such as Terraform Atlantis and Terraform Cloud.
+
+If the `GOOGLE_CREDENTIALS` environment variable is set, helm-gcs will attempt to use its value preferentially as its service account credentials! To disable this behavior and fall back to the defaults, set the environment variable `HELM_GCS_IGNORE_TERRAFORM_CREDS` to `true` in your execution workspace.

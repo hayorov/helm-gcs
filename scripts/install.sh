@@ -5,27 +5,35 @@ version="$(cat plugin.yaml | grep "version" | cut -d '"' -f 2)"
 echo "Installing helm-gcs ${version} ..."
 
 # Find correct archive name
-unameOut="$(uname -s)"
+unameOsOut="$(uname -s)"
+if [ "${HELM_OS}" ]; then
+  unameOsOut="${HELM_OS}"
+fi
 
-case "${unameOut}" in
-    Linux*)             os=Linux;;
-    Darwin*)            os=Darwin;;
-    CYGWIN*)            os=Cygwin;;
-    MINGW*|MSYS_NT*)    os=windows;;
-    *)                  os="UNKNOWN:${unameOut}"
+case "${unameOsOut}" in
+    Linux*|linux*)                      os=Linux;;
+    Darwin*|darwin*)                    os=Darwin;;
+    CYGWIN*|cygwin*)                    os=Cygwin;;
+    MINGW*|MSYS_NT*|mingw*|msys_nt*)    os=windows;;
+    *)                                  os="UNKNOWN_OS:${unameOsOut}"
 esac
 
-arch=`uname -m`
+unameArchOut=`uname -m`
+if [ "${HELM_ARCH}" ]
+then
+  unameArchOut="${HELM_ARCH}"
+fi
 
-if echo "$os" | grep -qe '.*UNKNOWN.*'
+case "${unameArchOut}" in
+  aarch64|arm64)  arch="arm64";;
+  amd64|x86_64)   arch="x86_64";;
+  *)              arch="UNKNOWN_ARCH:${arch}"
+esac
+
+if echo "${os}${arch}" | grep -qe '.*UNKNOWN.*'
 then
     echo "Unsupported OS / architecture: ${os}_${arch}"
     exit 1
-fi
-
-if [ "$arch" = 'aarch64' ]
-then
-    arch='arm64'
 fi
 
 url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_${version}_${os}_${arch}.tar.gz"

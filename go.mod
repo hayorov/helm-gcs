@@ -10,7 +10,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	golang.org/x/oauth2 v0.4.0
 	google.golang.org/api v0.109.0
-	helm.sh/helm/v3 v3.11.0
+	helm.sh/helm/v3 v3.11.1
 )
 
 require (

@@ -9,7 +9,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/oauth2 v0.8.0
-	google.golang.org/api v0.121.0
+	google.golang.org/api v0.122.0
 	helm.sh/helm/v3 v3.12.0
 )
 

@@ -1,5 +1,5 @@
 name: "gcs"
-version: "0.4.3"
+version: "0.4.2"
 usage: "Chart repositories on Google Cloud Storage"
 description: |-
   Manage repositories on Google Cloud Storage

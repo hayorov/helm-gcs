@@ -1,12 +1,12 @@
 <p align="center">
-	<img src="https://raw.githubusercontent.com/hayorov/helm-gcs/master/assets/helm-gcs-logo.png" alt="helm-gcs logo"/>
+	<img src="https://raw.githubusercontent.com/lodotek/helm-gcs/master/assets/helm-gcs-logo.png" alt="helm-gcs logo"/>
 </p>
 
 # helm-gcs
 
 ![Helm3 supported](https://img.shields.io/badge/Helm%203-supported-green)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/hayorov/helm-gcs)
-[![Build Status](https://github.com/hayorov/helm-gcs/workflows/release/badge.svg)](https://github.com/hayorov/helm-gcs/releases/latest)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/lodotek/helm-gcs)
+[![Build Status](https://github.com/lodotek/helm-gcs/workflows/release/badge.svg)](https://github.com/lodotek/helm-gcs/releases/latest)
 
 `helm-gcs` is a [helm](https://github.com/kubernetes/helm) plugin that allows you to manage private helm repositories on [Google Cloud Storage](https://cloud.google.com/storage/) aka buckets.
 
@@ -15,7 +15,7 @@
 Install the stable version:
 
 ```shell
-$ helm plugin install https://github.com/hayorov/helm-gcs.git
+$ helm plugin install https://github.com/lodotek/helm-gcs.git
 ```
 
 Update to latest
@@ -27,7 +27,7 @@ $ helm plugin update gcs
 Install a specific version:
 
 ```shell
-$ helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.4.0
+$ helm plugin install https://github.com/lodotek/helm-gcs.git --version 0.4.0
 ```
 
 ## Quick start
@@ -162,5 +162,5 @@ You can use the global flag `--debug`, or set `HELM_GCS_DEBUG=true` to get more 
 Starting from 0.3 helm-gcs works with Helm 3, if you want to use it with Helm 2 please install the latest version that supports it
 
 ```shell
-helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.2.2 # helm 2 compatible
+helm plugin install https://github.com/lodotek/helm-gcs.git --version 0.2.2 # helm 2 compatible
 ```

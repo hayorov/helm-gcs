@@ -22,7 +22,7 @@ import (
 	"helm.sh/helm/v3/pkg/provenance"
 	"helm.sh/helm/v3/pkg/repo"
 
-	"github.com/hayorov/helm-gcs/pkg/gcs"
+	"github.com/lodotek/helm-gcs/pkg/gcs"
 )
 
 var (

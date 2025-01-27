@@ -3,7 +3,7 @@
 builds:
   - main: ./cmd/helm-gcs/main.go
     binary: helm-gcs
-    ldflags: -s -w -X github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd.version={{.Version}} -X github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd.commit={{.Commit}} -X github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd.date={{.Date}}
+    ldflags: -s -w -X github.com/lodotek/helm-gcs/cmd/helm-gcs/cmd.version={{.Version}} -X github.com/lodotek/helm-gcs/cmd/helm-gcs/cmd.commit={{.Commit}} -X github.com/lodotek/helm-gcs/cmd/helm-gcs/cmd.date={{.Date}}
     goos:
       - windows
       - darwin

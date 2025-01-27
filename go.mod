@@ -1,4 +1,4 @@
-module github.com/hayorov/helm-gcs
+module github.com/lodotek/helm-gcs
 
 go 1.21
 

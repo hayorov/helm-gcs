@@ -25,7 +25,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/hayorov/helm-gcs/pkg/gcs"
+	"github.com/lodotek/helm-gcs/pkg/gcs"
 	"github.com/spf13/cobra"
 )
 

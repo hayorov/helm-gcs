@@ -1,4 +1,7 @@
 name: release
+permissions:
+  contents: read
+  pull-requests: write
 
 on:
   push:
@@ -22,10 +25,10 @@ jobs:
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: "CRITICAL"
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: "trivy-results.sarif"
+      # - name: Upload Trivy scan results to GitHub Security tab
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   with:
+      #     sarif_file: "trivy-results.sarif"
       - name: Set up Go
         uses: actions/setup-go@v3
         with:

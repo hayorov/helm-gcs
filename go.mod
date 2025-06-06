@@ -2,7 +2,7 @@ module github.com/hayorov/helm-gcs
 
 go 1.23.0
 
-toolchain go1.24.1
+toolchain go1.24.4
 
 require (
 	cloud.google.com/go/storage v1.39.1

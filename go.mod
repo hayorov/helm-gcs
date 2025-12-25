@@ -13,6 +13,7 @@ require (
 	golang.org/x/oauth2 v0.34.0
 	google.golang.org/api v0.258.0
 	helm.sh/helm/v3 v3.19.4
+	helm.sh/helm/v4 v4.0.4
 )
 
 require (

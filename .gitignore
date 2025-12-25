@@ -20,3 +20,16 @@ dist/
 vendor
 
 .idea
+
+# Environment variables
+.env
+.env.local
+*.env
+
+# Test coverage
+coverage/
+*.coverprofile
+
+# GCP credentials
+*-key.json
+service-account*.json

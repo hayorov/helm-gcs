@@ -41,6 +41,26 @@ var rootCmd = &cobra.Command{
 	Use:   "helm-gcs",
 	Short: "Manage Helm repositories on Google Cloud Storage",
 	Long:  ``,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Skip GCS client initialization for commands that don't need it
+		if cmd.Name() == "version" {
+			if flagDebug {
+				repo.Debug = true
+			}
+			return nil
+		}
+
+		// Initialize GCS client for other commands
+		var err error
+		gcsClient, err = gcs.NewClient(flagServiceAccount)
+		if err != nil {
+			return fmt.Errorf("failed to create GCS client: %w", err)
+		}
+		if flagDebug {
+			repo.Debug = true
+		}
+		return nil
+	},
 }
 
 // Execute executes the CLI
@@ -52,16 +72,6 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(func() {
-		var err error
-		gcsClient, err = gcs.NewClient(flagServiceAccount)
-		if err != nil {
-			panic(err)
-		}
-		if flagDebug {
-			repo.Debug = true
-		}
-	})
 	rootCmd.PersistentFlags().StringVar(&flagServiceAccount, "service-account", "", "service account to use for GCS")
 	rootCmd.PersistentFlags().BoolVar(&flagDebug, "debug", false, "activate debug")
 }

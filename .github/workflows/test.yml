@@ -28,6 +28,8 @@ jobs:
           go-version: "1.25"
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
+        with:
+          skip-cache: true
       - name: Check code formatting
         run: |
           GO_FILES=$(find . -iname '*.go' -type f) # All the .go files, excluding vendor/

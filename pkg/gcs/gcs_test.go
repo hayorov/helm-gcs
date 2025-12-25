@@ -131,8 +131,8 @@ func TestNewClient(t *testing.T) {
 
 	t.Run("client creation with service account", func(t *testing.T) {
 		// Clear OAuth token
-		os.Unsetenv("GOOGLE_OAUTH_ACCESS_TOKEN")
-		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		_ = os.Unsetenv("GOOGLE_OAUTH_ACCESS_TOKEN")
+		_ = os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 		// Try with a non-existent service account file
 		// This should fail, which is expected
@@ -157,8 +157,8 @@ func TestObject(t *testing.T) {
 	}
 
 	// Clear all credentials to avoid conflicts, then create client with ADC
-	os.Unsetenv("GOOGLE_OAUTH_ACCESS_TOKEN")
-	os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+	_ = os.Unsetenv("GOOGLE_OAUTH_ACCESS_TOKEN")
+	_ = os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 	client, err := NewClient("")
 	if err != nil {

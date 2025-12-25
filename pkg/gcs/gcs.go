@@ -25,6 +25,7 @@ func NewClient(serviceAccountPath string) (*storage.Client, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "read service account file")
 		}
+		//nolint:staticcheck // WithCredentialsJSON is deprecated but required for CLI service account file support
 		opts = append(opts, option.WithCredentialsJSON(credBytes))
 	}
 	client, err := storage.NewClient(context.Background(), opts...)

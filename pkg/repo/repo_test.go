@@ -159,7 +159,7 @@ func TestLogger(t *testing.T) {
 
 	t.Run("logger with debug disabled", func(t *testing.T) {
 		Debug = false
-		os.Unsetenv("HELM_GCS_DEBUG")
+		_ = os.Unsetenv("HELM_GCS_DEBUG")
 
 		log := logger()
 		if log == nil {
@@ -169,7 +169,7 @@ func TestLogger(t *testing.T) {
 
 	t.Run("logger with debug enabled via flag", func(t *testing.T) {
 		Debug = true
-		os.Unsetenv("HELM_GCS_DEBUG")
+		_ = os.Unsetenv("HELM_GCS_DEBUG")
 
 		log := logger()
 		if log == nil {
@@ -179,7 +179,7 @@ func TestLogger(t *testing.T) {
 
 	t.Run("logger with debug enabled via env var", func(t *testing.T) {
 		Debug = false
-		os.Setenv("HELM_GCS_DEBUG", "true")
+		_ = os.Setenv("HELM_GCS_DEBUG", "true")
 
 		log := logger()
 		if log == nil {
@@ -228,10 +228,10 @@ func TestEnvOr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.setEnv {
-				os.Setenv(tt.envName, tt.envValue)
-				defer os.Unsetenv(tt.envName)
+				_ = os.Setenv(tt.envName, tt.envValue)
+				defer func() { _ = os.Unsetenv(tt.envName) }()
 			} else {
-				os.Unsetenv(tt.envName)
+				_ = os.Unsetenv(tt.envName)
 			}
 
 			got := envOr(tt.envName, tt.def)

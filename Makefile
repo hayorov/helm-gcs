@@ -65,13 +65,13 @@ test-unit:
 
 ## test-integration: Run integration tests (requires GCS_TEST_BUCKET env var)
 test-integration:
-	@echo "Running integration tests..."
 	@if [ -z "$(GCS_TEST_BUCKET)" ]; then \
-		echo "ERROR: GCS_TEST_BUCKET environment variable not set"; \
-		echo "Example: make test-integration GCS_TEST_BUCKET=gs://my-bucket/test-path"; \
-		exit 1; \
+		echo "Skipping integration tests: GCS_TEST_BUCKET environment variable not set"; \
+		echo "To run integration tests: make test-integration GCS_TEST_BUCKET=gs://my-bucket/test-path"; \
+	else \
+		echo "Running integration tests..."; \
+		go test -v -race -timeout $(TEST_TIMEOUT) -tags=integration ./pkg/repo; \
 	fi
-	@go test -v -race -timeout $(TEST_TIMEOUT) -tags=integration ./pkg/repo
 
 ## test-all: Run all tests (unit + integration)
 test-all: test-unit test-integration

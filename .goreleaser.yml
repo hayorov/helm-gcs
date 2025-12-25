@@ -1,5 +1,6 @@
 # .goreleaser.yml
 # Build customization
+version: 2
 builds:
   - main: ./cmd/helm-gcs/main.go
     binary: helm-gcs

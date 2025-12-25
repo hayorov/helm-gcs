@@ -5,37 +5,21 @@ name: integration-tests
 # This workflow runs integration tests against a real GCS bucket using one of two auth methods:
 #
 # Method 1: Service Account Key (simpler, less secure)
-#   Required:
+#   Required repository secrets/variables:
 #   - Secret: GCS_TEST_CREDENTIALS (Service account JSON key)
 #   - Variable: GCS_TEST_BUCKET (e.g., gs://my-bucket/test-path)
 #
 # Method 2: Workload Identity Federation (recommended, more secure)
-#   Required:
+#   Required repository secrets/variables:
 #   - Secret: WIF_PROVIDER (Workload Identity Provider resource name)
 #   - Secret: WIF_SERVICE_ACCOUNT (Service account email)
 #   - Variable: GCS_TEST_BUCKET (e.g., gs://my-bucket/test-path)
 #
+# Configure these in: Repository Settings > Secrets and variables > Actions
 # See .github/INTEGRATION_TESTS_SETUP.md for detailed setup instructions
 
 on:
   workflow_dispatch:
-    inputs:
-      gcs_test_bucket:
-        description: 'GCS bucket for testing (e.g., gs://my-bucket/test-path)'
-        required: false
-        type: string
-      auth_method:
-        description: 'Authentication method'
-        required: false
-        default: 'auto'
-        type: choice
-        options:
-          - auto
-          - service-account-key
-          - workload-identity
-  schedule:
-    # Run integration tests weekly on Sunday at 2 AM UTC
-    - cron: '0 2 * * 0'
   pull_request:
     paths:
       - 'pkg/**'
@@ -45,8 +29,8 @@ on:
 jobs:
   integration:
     runs-on: ubuntu-latest
-    # Run if bucket is configured OR manual trigger with bucket specified
-    if: vars.GCS_TEST_BUCKET != '' || github.event.inputs.gcs_test_bucket != ''
+    # Run if bucket is configured in repository variables
+    if: vars.GCS_TEST_BUCKET != ''
 
     permissions:
       contents: read
@@ -64,12 +48,10 @@ jobs:
       - name: Determine authentication method
         id: auth-method
         run: |
-          if [ "${{ github.event.inputs.auth_method }}" = "workload-identity" ] || \
-             [ -n "${{ secrets.WIF_PROVIDER }}" -a "${{ github.event.inputs.auth_method }}" != "service-account-key" ]; then
+          if [ -n "${{ secrets.WIF_PROVIDER }}" ]; then
             echo "method=workload-identity" >> $GITHUB_OUTPUT
             echo "Using Workload Identity Federation"
-          elif [ "${{ github.event.inputs.auth_method }}" = "service-account-key" ] || \
-               [ -n "${{ secrets.GCS_TEST_CREDENTIALS }}" ]; then
+          elif [ -n "${{ secrets.GCS_TEST_CREDENTIALS }}" ]; then
             echo "method=service-account-key" >> $GITHUB_OUTPUT
             echo "Using Service Account Key"
           else
@@ -105,7 +87,7 @@ jobs:
           echo "Testing GCP authentication..."
           gcloud auth list
           echo "Testing GCS access..."
-          BUCKET_NAME=$(echo "${{ github.event.inputs.gcs_test_bucket || vars.GCS_TEST_BUCKET }}" | sed 's|gs://||' | cut -d'/' -f1)
+          BUCKET_NAME=$(echo "${{ vars.GCS_TEST_BUCKET }}" | sed 's|gs://||' | cut -d'/' -f1)
           gsutil ls "gs://$BUCKET_NAME" || echo "Warning: Cannot list bucket contents"
 
       - name: Install Helm
@@ -115,7 +97,7 @@ jobs:
 
       - name: Run integration tests
         env:
-          GCS_TEST_BUCKET: ${{ github.event.inputs.gcs_test_bucket || vars.GCS_TEST_BUCKET }}
+          GCS_TEST_BUCKET: ${{ vars.GCS_TEST_BUCKET }}
           HELM_GCS_DEBUG: ${{ vars.HELM_GCS_DEBUG || 'false' }}
         run: |
           echo "========================================="
@@ -149,10 +131,10 @@ jobs:
         run: |
           echo "Cleaning up test artifacts..."
           # Tests should auto-cleanup, but this is a safety measure
-          gsutil -m rm -r "gs://$(echo ${{ github.event.inputs.gcs_test_bucket || vars.GCS_TEST_BUCKET }} | sed 's|gs://||')/create-repo-*" 2>/dev/null || true
-          gsutil -m rm -r "gs://$(echo ${{ github.event.inputs.gcs_test_bucket || vars.GCS_TEST_BUCKET }} | sed 's|gs://||')/push-chart-*" 2>/dev/null || true
-          gsutil -m rm -r "gs://$(echo ${{ github.event.inputs.gcs_test_bucket || vars.GCS_TEST_BUCKET }} | sed 's|gs://||')/remove-chart-*" 2>/dev/null || true
-          gsutil -m rm -r "gs://$(echo ${{ github.event.inputs.gcs_test_bucket || vars.GCS_TEST_BUCKET }} | sed 's|gs://||')/concurrent-*" 2>/dev/null || true
+          gsutil -m rm -r "gs://$(echo ${{ vars.GCS_TEST_BUCKET }} | sed 's|gs://||')/create-repo-*" 2>/dev/null || true
+          gsutil -m rm -r "gs://$(echo ${{ vars.GCS_TEST_BUCKET }} | sed 's|gs://||')/push-chart-*" 2>/dev/null || true
+          gsutil -m rm -r "gs://$(echo ${{ vars.GCS_TEST_BUCKET }} | sed 's|gs://||')/remove-chart-*" 2>/dev/null || true
+          gsutil -m rm -r "gs://$(echo ${{ vars.GCS_TEST_BUCKET }} | sed 's|gs://||')/concurrent-*" 2>/dev/null || true
           echo "✓ Cleanup complete"
 
       - name: Upload test results
@@ -169,7 +151,7 @@ jobs:
         run: |
           echo "### Integration Test Results 🧪" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Bucket**: \`${{ github.event.inputs.gcs_test_bucket || vars.GCS_TEST_BUCKET }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Bucket**: \`${{ vars.GCS_TEST_BUCKET }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Auth Method**: ${{ steps.auth-method.outputs.method }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 

@@ -10,7 +10,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/oauth2 v0.28.0
+	golang.org/x/oauth2 v0.34.0
 	google.golang.org/api v0.227.0
 	helm.sh/helm/v3 v3.18.5
 )

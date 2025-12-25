@@ -97,21 +97,21 @@ func TestNewClient(t *testing.T) {
 
 	defer func() {
 		if originalToken != "" {
-			os.Setenv("GOOGLE_OAUTH_ACCESS_TOKEN", originalToken)
+			_ = os.Setenv("GOOGLE_OAUTH_ACCESS_TOKEN", originalToken)
 		} else {
-			os.Unsetenv("GOOGLE_OAUTH_ACCESS_TOKEN")
+			_ = os.Unsetenv("GOOGLE_OAUTH_ACCESS_TOKEN")
 		}
 		if originalAppCreds != "" {
-			os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", originalAppCreds)
+			_ = os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", originalAppCreds)
 		} else {
-			os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+			_ = os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 		}
 	}()
 
 	t.Run("client creation with default credentials", func(t *testing.T) {
 		// Clear all credential env vars to avoid conflicts
-		os.Unsetenv("GOOGLE_OAUTH_ACCESS_TOKEN")
-		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		_ = os.Unsetenv("GOOGLE_OAUTH_ACCESS_TOKEN")
+		_ = os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 		// This will use Application Default Credentials (ADC)
 		// In CI/testing without GCP credentials, this may fail, which is expected

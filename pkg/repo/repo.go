@@ -87,14 +87,16 @@ func Create(r *Repo) error {
 	}
 
 	_, err = o.NewReader(context.Background())
-	if err == storage.ErrObjectNotExist {
+	switch err {
+	case storage.ErrObjectNotExist:
 		i := repo.NewIndexFile()
 		return r.uploadIndexFile(i)
-	} else if err == nil {
+	case nil:
 		log.Debugf("file %s already exists", r.indexFileURL)
 		return nil
+	default:
+		return err
 	}
-	return err
 }
 
 // PushChart adds a chart into the repository.
@@ -264,11 +266,11 @@ func (r *Repo) indexFile() (*repo.IndexFile, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "reader")
 	}
+	defer func() { _ = reader.Close() }()
 	b, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, errors.Wrap(err, "read")
 	}
-	defer reader.Close()
 
 	i := &repo.IndexFile{}
 	if err := yaml.Unmarshal(b, i); err != nil {

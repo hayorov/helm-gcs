@@ -21,7 +21,11 @@ func NewClient(serviceAccountPath string) (*storage.Client, error) {
 		token := &oauth2.Token{AccessToken: token}
 		opts = append(opts, option.WithTokenSource(oauth2.StaticTokenSource(token)))
 	} else if serviceAccountPath != "" {
-		opts = append(opts, option.WithCredentialsFile(serviceAccountPath))
+		credBytes, err := os.ReadFile(serviceAccountPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "read service account file")
+		}
+		opts = append(opts, option.WithCredentialsJSON(credBytes))
 	}
 	client, err := storage.NewClient(context.Background(), opts...)
 	if err != nil {

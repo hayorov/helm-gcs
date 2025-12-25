@@ -151,9 +151,9 @@ func TestLogger(t *testing.T) {
 	originalDebug := os.Getenv("HELM_GCS_DEBUG")
 	defer func() {
 		if originalDebug != "" {
-			os.Setenv("HELM_GCS_DEBUG", originalDebug)
+			_ = os.Setenv("HELM_GCS_DEBUG", originalDebug)
 		} else {
-			os.Unsetenv("HELM_GCS_DEBUG")
+			_ = os.Unsetenv("HELM_GCS_DEBUG")
 		}
 	}()
 

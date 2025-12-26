@@ -149,60 +149,51 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 func (r Repo) RemoveChart(name, version string, retry bool) error {
 	log.Debugf("removing chart %s-%s", name, version)
 
-removeChart:
-	index, err := r.indexFile()
-	if err != nil {
-		return errors.Wrap(err, "index")
-	}
-
-	vs, ok := index.Entries[name]
-	if !ok {
-		return fmt.Errorf("chart \"%s\" not found", name)
-	}
-
-	urls := []string{}
-	for i, v := range vs {
-		if version == "" || version == v.Version {
-			log.Debugf("%s-%s will be deleted", name, v.Version)
-			urls = append(urls, v.URLs...)
-		}
-		if version == v.Version {
-			vs[i] = vs[len(vs)-1]
-			vs[len(vs)-1] = nil
-			index.Entries[name] = vs[:len(vs)-1]
-			break
-		}
-	}
-	if version == "" || len(index.Entries[name]) == 0 {
-		delete(index.Entries, name)
-	}
-
-	err = r.uploadIndexFile(index)
-	if err == ErrIndexOutOfDate && retry {
-		goto removeChart
-	}
-
-	if err != nil {
-		return err
-	}
-
-	// Delete charts from GCS
-	for _, url := range urls {
-		o, err := gcs.Object(r.gcs, url)
+	for {
+		index, err := r.indexFile()
 		if err != nil {
-			return errors.Wrap(err, "object")
+			return errors.Wrap(err, "index")
 		}
 
-		log.Debugf("delete gcs file %s", url)
-		err = o.Delete(context.Background())
-		if err != nil {
-			return errors.Wrap(err, "delete")
+		vs, ok := index.Entries[name]
+		if !ok {
+			return fmt.Errorf("chart \"%s\" not found", name)
 		}
+
+		urls := []string{}
+		for i, v := range vs {
+			if version == "" || version == v.Version {
+				log.Debugf("%s-%s will be deleted", name, v.Version)
+				urls = append(urls, v.URLs...)
+			}
+			if version == v.Version {
+				vs = removeChartVersion(vs, i)
+				index.Entries[name] = vs
+				break
+			}
+		}
+		if version == "" || len(index.Entries[name]) == 0 {
+			delete(index.Entries, name)
+		}
+
+		err = r.uploadIndexFile(index)
+		if err == ErrIndexOutOfDate && retry {
+			continue
+		}
+
+		if err != nil {
+			return err
+		}
+
+		// Delete charts from GCS
+		if err := deleteChartFiles(r.gcs, urls); err != nil {
+			return err
+		}
+		return nil
 	}
-	return nil
 }
 
-// uploadIndexFile update the index file on GCS.
+// uploadIndexFile updates the index file on GCS.
 func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
 	log.Debugf("push index file")
 
@@ -210,15 +201,17 @@ func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
 	i.Generated = time.Now()
 
 	o, err := gcs.Object(r.gcs, r.indexFileURL)
+	if err != nil {
+		return errors.Wrap(err, "object")
+	}
+
 	if r.indexFileGeneration != 0 {
 		log.Debugf("update condition: if generation = %d", r.indexFileGeneration)
 		o = o.If(storage.Conditions{GenerationMatch: r.indexFileGeneration})
 	}
 
 	w := o.NewWriter(context.Background())
-	if err != nil {
-		return errors.Wrap(err, "writer")
-	}
+
 	// ensure index.yaml is not cached by GCS
 	w.CacheControl = "no-cache, max-age=0, no-transform"
 
@@ -229,10 +222,12 @@ func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
 	if err != nil {
 		return errors.Wrap(err, "marshal")
 	}
+
 	_, err = w.Write(b)
 	if err != nil {
 		return errors.Wrap(err, "write")
 	}
+
 	err = w.Close()
 	if err != nil {
 		gerr, ok := err.(*googleapi.Error)
@@ -331,15 +326,12 @@ func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.
 	_, fname := filepath.Split(chartpath)
 	log.Debugf("indexing chart '%s-%s' as '%s' (base url: %s)", chart.Metadata.Name, chart.Metadata.Version, fname, url)
 
-	// Need to remove current version of chart if there is any
+	// Remove current version of chart if it already exists
 	currentChart, _ := i.Get(chart.Metadata.Name, chart.Metadata.Version)
-	if currentChart != nil {
-		chartVersions := i.Entries[chart.Metadata.Name]
-		for idx, ver := range chartVersions {
+	if currentChart != nil && len(i.Entries[chart.Metadata.Name]) > 0 {
+		for idx, ver := range i.Entries[chart.Metadata.Name] {
 			if ver.Version == currentChart.Version {
-				chartVersions[idx] = chartVersions[len(chartVersions)-1]
-				chartVersions[len(chartVersions)-1] = nil
-				i.Entries[chart.Metadata.Name] = chartVersions[:len(chartVersions)-1]
+				i.Entries[chart.Metadata.Name] = removeChartVersion(i.Entries[chart.Metadata.Name], idx)
 				break
 			}
 		}
@@ -407,4 +399,26 @@ func envOr(name, def string) string {
 		return v
 	}
 	return def
+}
+
+// removeChartVersion removes an item at index from a slice of chart versions
+func removeChartVersion(vs []*repo.ChartVersion, idx int) []*repo.ChartVersion {
+	return append(vs[:idx], vs[idx+1:]...)
+}
+
+// deleteChartFiles deletes multiple chart files from GCS
+func deleteChartFiles(client *storage.Client, urls []string) error {
+	for _, url := range urls {
+		o, err := gcs.Object(client, url)
+		if err != nil {
+			return errors.Wrap(err, "object")
+		}
+
+		log.Debugf("delete gcs file %s", url)
+		err = o.Delete(context.Background())
+		if err != nil {
+			return errors.Wrap(err, "delete")
+		}
+	}
+	return nil
 }

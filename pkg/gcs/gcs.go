@@ -35,7 +35,7 @@ func NewClient(serviceAccountPath string) (*storage.Client, error) {
 	return client, err
 }
 
-// Object retourne a new object handle for the given path
+// Object returns a new object handle for the given path
 func Object(client *storage.Client, path string) (*storage.ObjectHandle, error) {
 	bucket, path, err := splitPath(path)
 	if err != nil {

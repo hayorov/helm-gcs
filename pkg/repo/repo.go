@@ -16,11 +16,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/helmpath"
-	"helm.sh/helm/v3/pkg/provenance"
-	"helm.sh/helm/v3/pkg/repo"
+	"helm.sh/helm/v4/pkg/chart/loader"
+	chartv2 "helm.sh/helm/v4/pkg/chart/v2"
+	"helm.sh/helm/v4/pkg/helmpath"
+	"helm.sh/helm/v4/pkg/provenance"
+	repo "helm.sh/helm/v4/pkg/repo/v1"
 
 	"github.com/hayorov/helm-gcs/pkg/gcs"
 )
@@ -112,9 +112,14 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 	}
 
 	log.Debugf("load chart \"%s\" (force=%t, retry=%t, public=%t)", chartpath, force, retry, public)
-	chart, err := loader.Load(chartpath)
+	chartInterface, err := loader.Load(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "load chart")
+	}
+
+	chart, ok := chartInterface.(*chartv2.Chart)
+	if !ok {
+		return errors.New("failed to convert chart to v2.Chart")
 	}
 
 	log.Debugf("chart loaded: %s-%s", chart.Metadata.Name, chart.Metadata.Version)
@@ -308,7 +313,7 @@ func (r Repo) uploadChart(chartpath string, metadata map[string]string) error {
 	return nil
 }
 
-func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chart.Chart, public bool, publicURL string, bucketPath string) error {
+func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chartv2.Chart, public bool, publicURL string, bucketPath string) error {
 	hash, err := provenance.DigestFile(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "generate chart file digest")

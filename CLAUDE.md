@@ -121,7 +121,7 @@ See: pkg/repo/repo.go:320-340
 |-----------|---------|---------|---------|
 | CLI Framework | github.com/spf13/cobra | v1.10.2 | Command structure |
 | GCS Client | cloud.google.com/go/storage | v1.39.1 | GCS operations |
-| Helm Integration | helm.sh/helm/v3 | v3.18.5 | Chart/index handling |
+| Helm Integration | helm.sh/helm/v4 | v4.0.0 | Chart/index handling |
 | Authentication | golang.org/x/oauth2 | v0.28.0 | OAuth2 tokens |
 | Logging | github.com/sirupsen/logrus | v1.9.3 | Structured logging |
 | Error Handling | github.com/pkg/errors | v0.9.1 | Error wrapping |

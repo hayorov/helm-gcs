@@ -2,24 +2,35 @@ name: integration-tests
 
 # Integration Tests with GCP
 #
-# This workflow runs integration tests against a real GCS bucket using one of two auth methods:
+# This workflow runs integration tests against a real GCS bucket.
 #
-# Method 1: Service Account Key (simpler, less secure)
-#   Required repository secrets/variables:
-#   - Secret: GCS_TEST_CREDENTIALS (Service account JSON key)
-#   - Variable: GCS_TEST_BUCKET (e.g., gs://my-bucket/test-path)
+# Required GitHub Actions Configuration:
+#   Secrets (Repository Settings > Secrets and variables > Actions > Secrets):
+#   - GCS_TEST_CREDENTIALS: Service account JSON key CONTENT (entire JSON file content)
+#     Note: In GitHub Actions, this contains the JSON content itself, not a file path
+#     The workflow will automatically create a temporary file and set GOOGLE_APPLICATION_CREDENTIALS
 #
-# Method 2: Workload Identity Federation (recommended, more secure)
-#   Required repository secrets/variables:
-#   - Secret: WIF_PROVIDER (Workload Identity Provider resource name)
-#   - Secret: WIF_SERVICE_ACCOUNT (Service account email)
-#   - Variable: GCS_TEST_BUCKET (e.g., gs://my-bucket/test-path)
+#   Variables (Repository Settings > Secrets and variables > Actions > Variables):
+#   - GCS_TEST_BUCKET: GCS bucket path (e.g., gs://my-bucket/test-path)
+#   - HELM_GCS_DEBUG: Enable debug mode (optional, default: false)
 #
-# Configure these in: Repository Settings > Secrets and variables > Actions
-# See .github/INTEGRATION_TESTS_SETUP.md for detailed setup instructions
+# Local Development:
+#   For local development, use .env file with:
+#   - GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json (file path)
+#   - GCS_TEST_BUCKET=gs://your-bucket/test-path
+#
+# This workflow:
+#   1. Runs only after the 'test' workflow completes successfully
+#   2. Validates all required secrets and variables are configured
+#   3. Uses Service Account Key authentication from GCS_TEST_CREDENTIALS secret
+#   4. Loads test configuration from repository variables
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["test"]
+    types:
+      - completed
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -33,8 +44,14 @@ on:
 jobs:
   integration:
     runs-on: ubuntu-latest
-    # Run if bucket is configured in repository variables
-    if: vars.GCS_TEST_BUCKET != ''
+    # Only run if:
+    # 1. Test workflow completed successfully (or triggered manually/by PR)
+    # 2. GCS_TEST_BUCKET is configured in repository variables
+    if: |
+      vars.GCS_TEST_BUCKET != '' &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event_name == 'pull_request' ||
+       github.event.workflow_run.conclusion == 'success')
 
     permissions:
       contents: read
@@ -44,44 +61,88 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required secrets and variables
+        run: |
+          echo "========================================="
+          echo "Validating GitHub Actions Configuration"
+          echo "========================================="
+
+          ERRORS=0
+
+          # Validate Variables (from Repository Variables)
+          if [ -z "${{ vars.GCS_TEST_BUCKET }}" ]; then
+            echo "❌ ERROR: GCS_TEST_BUCKET variable is not set"
+            echo "   Configure in: Repository Settings > Secrets and variables > Actions > Variables"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "✓ GCS_TEST_BUCKET (Variable): ${{ vars.GCS_TEST_BUCKET }}"
+          fi
+
+          if [ -z "${{ vars.HELM_GCS_DEBUG }}" ]; then
+            echo "ℹ HELM_GCS_DEBUG (Variable): not set, will use default (false)"
+          else
+            echo "✓ HELM_GCS_DEBUG (Variable): ${{ vars.HELM_GCS_DEBUG }}"
+          fi
+
+          # Validate Secrets (from Repository Secrets)
+          if [ -z "${{ secrets.GCS_TEST_CREDENTIALS }}" ]; then
+            echo "❌ ERROR: GCS_TEST_CREDENTIALS secret is not set"
+            echo "   This should contain the ENTIRE JSON content of your service account key"
+            echo "   Configure in: Repository Settings > Secrets and variables > Actions > Secrets"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "✓ GCS_TEST_CREDENTIALS (Secret): configured (JSON content)"
+            echo "   Note: Contains service account JSON (not a file path)"
+          fi
+
+          echo "========================================="
+
+          if [ $ERRORS -gt 0 ]; then
+            echo ""
+            echo "Integration tests cannot run due to missing configuration."
+            echo "Please configure the required secrets and variables in:"
+            echo "Repository Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+
+          echo "✓ All required secrets and variables are configured"
+          echo ""
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.25"
 
-      - name: Determine authentication method
-        id: auth-method
-        run: |
-          if [ -n "${{ secrets.WIF_PROVIDER }}" ]; then
-            echo "method=workload-identity" >> $GITHUB_OUTPUT
-            echo "Using Workload Identity Federation"
-          elif [ -n "${{ secrets.GCS_TEST_CREDENTIALS }}" ]; then
-            echo "method=service-account-key" >> $GITHUB_OUTPUT
-            echo "Using Service Account Key"
-          else
-            echo "ERROR: No valid authentication method configured"
-            echo "Please set either GCS_TEST_CREDENTIALS or WIF_PROVIDER secret"
-            exit 1
-          fi
-
-      - name: Authenticate to Google Cloud (Workload Identity)
-        if: steps.auth-method.outputs.method == 'workload-identity'
-        id: auth-wif
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-          create_credentials_file: true
-          export_environment_variables: true
-
       - name: Authenticate to Google Cloud (Service Account Key)
-        if: steps.auth-method.outputs.method == 'service-account-key'
         id: auth-key
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCS_TEST_CREDENTIALS }}
           create_credentials_file: true
           export_environment_variables: true
+
+      - name: Verify credentials file creation
+        run: |
+          echo "========================================="
+          echo "GCP Credentials Configuration"
+          echo "========================================="
+          echo "Source: GCS_TEST_CREDENTIALS secret (JSON content)"
+          echo "Action: Created temporary credentials file"
+          if [ -n "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            echo "✓ GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
+            if [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+              echo "✓ Credentials file exists"
+              echo "  File size: $(stat -f%z "$GOOGLE_APPLICATION_CREDENTIALS" 2>/dev/null || stat -c%s "$GOOGLE_APPLICATION_CREDENTIALS" 2>/dev/null) bytes"
+            else
+              echo "❌ ERROR: Credentials file not found"
+              exit 1
+            fi
+          else
+            echo "❌ ERROR: GOOGLE_APPLICATION_CREDENTIALS not set"
+            exit 1
+          fi
+          echo "========================================="
+          echo ""
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -108,14 +169,14 @@ jobs:
           echo "========================================="
           echo "Integration Test Configuration"
           echo "========================================="
-          echo "GCS Bucket: $GCS_TEST_BUCKET"
-          echo "Auth Method: ${{ steps.auth-method.outputs.method }}"
-          echo "Debug Mode: $HELM_GCS_DEBUG"
+          echo "GCS Bucket (from Variables): $GCS_TEST_BUCKET"
+          echo "Debug Mode (from Variables): $HELM_GCS_DEBUG"
+          echo "Auth Method: Service Account Key (from Secrets)"
           echo "========================================="
           echo ""
 
           # Run integration tests with enhanced output
-          go test -v -race -timeout 10m ./pkg/repo 2>&1 | tee integration-test-output.log
+          go test -v -race -tags=integration -timeout 10m ./pkg/repo 2>&1 | tee integration-test-output.log
 
           # Check test results
           if [ ${PIPESTATUS[0]} -eq 0 ]; then
@@ -156,8 +217,10 @@ jobs:
         run: |
           echo "### Integration Test Results 🧪" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Bucket**: \`${{ vars.GCS_TEST_BUCKET }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Auth Method**: ${{ steps.auth-method.outputs.method }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Configuration:**" >> $GITHUB_STEP_SUMMARY
+          echo "- GCS Bucket (Variable): \`${{ vars.GCS_TEST_BUCKET }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Debug Mode (Variable): \`${{ vars.HELM_GCS_DEBUG || 'false' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Auth Method: Service Account Key (Secret)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f integration-test-output.log ]; then
@@ -165,7 +228,7 @@ jobs:
             PASS_COUNT=$(grep -c "PASS:" integration-test-output.log || echo "0")
             FAIL_COUNT=$(grep -c "FAIL:" integration-test-output.log || echo "0")
 
-            echo "**Results**:" >> $GITHUB_STEP_SUMMARY
+            echo "**Results:**" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ Passed: $PASS_COUNT" >> $GITHUB_STEP_SUMMARY
             echo "- ❌ Failed: $FAIL_COUNT" >> $GITHUB_STEP_SUMMARY
           fi

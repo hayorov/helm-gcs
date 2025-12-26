@@ -1,166 +1,513 @@
 <p align="center">
-	<img src="https://raw.githubusercontent.com/hayorov/helm-gcs/master/assets/helm-gcs-logo.png" alt="helm-gcs logo"/>
+	<img src="https://raw.githubusercontent.com/hayorov/helm-gcs/master/assets/helm-gcs-logo.png" alt="helm-gcs logo" width="400"/>
 </p>
 
-# helm-gcs
+<h1 align="center">helm-gcs</h1>
 
-![Helm3 supported](https://img.shields.io/badge/Helm%203-supported-green)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/hayorov/helm-gcs)
-[![Build Status](https://github.com/hayorov/helm-gcs/workflows/release/badge.svg)](https://github.com/hayorov/helm-gcs/releases/latest)
+<p align="center">
+  <strong>Helm plugin for managing chart repositories on Google Cloud Storage</strong>
+</p>
 
-`helm-gcs` is a [helm](https://github.com/kubernetes/helm) plugin that allows you to manage private helm repositories on [Google Cloud Storage](https://cloud.google.com/storage/) aka buckets.
+<p align="center">
+  <a href="https://github.com/hayorov/helm-gcs/releases/latest">
+    <img src="https://img.shields.io/github/v/release/hayorov/helm-gcs?style=flat-square" alt="Latest Release"/>
+  </a>
+  <a href="https://github.com/hayorov/helm-gcs/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/hayorov/helm-gcs/test.yml?style=flat-square" alt="Build Status"/>
+  </a>
+  <a href="https://github.com/hayorov/helm-gcs/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/hayorov/helm-gcs?style=flat-square" alt="License"/>
+  </a>
+  <a href="https://goreportcard.com/report/github.com/hayorov/helm-gcs">
+    <img src="https://goreportcard.com/badge/github.com/hayorov/helm-gcs?style=flat-square" alt="Go Report Card"/>
+  </a>
+</p>
 
-## Installation
+<p align="center">
+  <img src="https://img.shields.io/badge/Helm%204-supported-success?style=flat-square&logo=helm" alt="Helm 4"/>
+  <img src="https://img.shields.io/badge/Helm%203-supported-success?style=flat-square&logo=helm" alt="Helm 3"/>
+  <img src="https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat-square&logo=go" alt="Go Version"/>
+  <img src="https://img.shields.io/badge/GCP-Cloud%20Storage-4285F4?style=flat-square&logo=googlecloud" alt="Google Cloud Storage"/>
+</p>
 
-Install the stable version:
+---
 
-```shell
-$ helm plugin install https://github.com/hayorov/helm-gcs.git
+## 📋 Table of Contents
+
+- [Overview](#-overview)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Authentication](#-authentication)
+- [Usage](#-usage)
+  - [Initialize Repository](#initialize-repository)
+  - [Push Charts](#push-charts)
+  - [Remove Charts](#remove-charts)
+- [Advanced Features](#-advanced-features)
+- [Troubleshooting](#-troubleshooting)
+- [Version Compatibility](#-version-compatibility)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
+
+## 🎯 Overview
+
+**helm-gcs** is a [Helm](https://helm.sh/) plugin that enables you to manage private Helm chart repositories using [Google Cloud Storage](https://cloud.google.com/storage/) (GCS) buckets as the backend storage.
+
+Store, version, and distribute your Helm charts on GCS with the same ease and security you expect from Google Cloud Platform.
+
+### Why helm-gcs?
+
+- **🔐 Secure**: Leverage GCP IAM for fine-grained access control
+- **💰 Cost-effective**: Pay only for storage used, no infrastructure to maintain
+- **🚀 Fast**: Benefit from Google's global CDN and low-latency storage
+- **🔄 Concurrent-safe**: Built-in optimistic locking prevents race conditions
+- **📦 Simple**: Works seamlessly with existing Helm workflows
+- **☁️ Cloud-native**: Native integration with Google Cloud Platform
+
+---
+
+## ✨ Features
+
+- 📥 **Push/Pull charts** to/from GCS buckets
+- 🔧 **Initialize repositories** anywhere in your GCS bucket
+- 🗑️ **Remove charts** by version or entirely
+- 🔐 **Multiple authentication methods** (ADC, Service Account, OAuth)
+- 🔄 **Concurrent update handling** with automatic retry
+- 🏷️ **Custom metadata** support for chart objects
+- 📁 **Bucket path organization** for structured chart storage
+- 🌍 **Multi-platform support** (Linux, macOS, Windows on amd64/arm64)
+- ✅ **Helm 4 compatible** (also supports Helm 3)
+
+---
+
+## 📦 Installation
+
+### Install Latest Version
+
+```bash
+helm plugin install https://github.com/hayorov/helm-gcs.git
 ```
 
-Update to latest
+### Install Specific Version
 
-```shell
-$ helm plugin update gcs
+```bash
+helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.6.0
 ```
 
-Install a specific version:
+### Update to Latest
 
-```shell
-$ helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.4.0
+```bash
+helm plugin update gcs
 ```
 
-## Quick start
+### Verify Installation
 
-```shell
-# Init a new repository
-$ helm gcs init gs://bucket/path
-
-# Add your repository to Helm
-$ helm repo add repo-name gs://bucket/path
-
-# Push a chart to your repository
-$ helm gcs push chart.tar.gz repo-name
-
-# Update Helm cache
-$ helm repo update
-
-# Fetch the chart
-$ helm fetch repo-name/chart
-
-# Remove the chart
-$ helm gcs rm chart repo-name
+```bash
+helm gcs version
 ```
 
-## Documentation
+---
 
-### Authentification
+## 🚀 Quick Start
 
-To authenticate against GCS you can:
+Get started in under 2 minutes:
 
-- Use the [application default credentials](https://cloud.google.com/sdk/gcloud/reference/auth/application-default/)
+```bash
+# 1. Initialize a new repository in your GCS bucket
+helm gcs init gs://my-bucket/helm-charts
 
-- Use a service account via [`export GOOGLE_APPLICATION_CREDENTIALS=credentials.json` system variable](https://cloud.google.com/docs/authentication/getting-started)
+# 2. Add your repository to Helm
+helm repo add my-repo gs://my-bucket/helm-charts
 
-- Use a temporary [OAuth 2.0 access token](https://developers.google.com/identity/protocols/oauth2) via `export GOOGLE_OAUTH_ACCESS_TOKEN=<MY_ACCESS_TOKEN>` environment variable. When used, plugin will ignore other authentification methods.
+# 3. Package your chart
+helm package ./my-chart
 
-See [GCP documentation](https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application) for more information.
+# 4. Push chart to your repository
+helm gcs push my-chart-1.0.0.tgz my-repo
 
-### Create a repository
+# 5. Update Helm cache
+helm repo update
 
-First, you need to [create a bucket on GCS](https://cloud.google.com/storage/docs/creating-buckets), which will be used by the plugin to store your charts.
+# 6. Search for your chart
+helm search repo my-repo
 
-Then you have to initialize a repository at a specific location in your bucket:
-
-```shell
-$ helm gcs init gs://your-bucket/path
+# 7. Install your chart
+helm install my-release my-repo/my-chart
 ```
 
-> You can create a repository anywhere in your bucket.
+---
 
-> This command does nothing if a repository already exists at the given location.
+## 🔐 Authentication
 
-You can now add the repository to helm:
+helm-gcs supports multiple authentication methods (in priority order):
 
-```shell
-$ helm repo add my-repository gs://your-bucket/path
+### 1. OAuth Access Token (Temporary)
+
+```bash
+export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token)
+helm gcs push chart.tgz my-repo
 ```
 
-### Push a chart
+> ⏱️ Token expires in 1 hour. Best for temporary operations.
 
-Package the chart:
+### 2. Service Account Key File
 
-```shell
-$ helm package my-chart
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+helm gcs push chart.tgz my-repo
 ```
 
-This will create a file `my-chart-<semver>.tgz`.
+> 🔑 Recommended for CI/CD environments.
 
-Now, to push the chart to the repository `my-repository`:
+### 3. Application Default Credentials (ADC)
 
-```shell
-$ helm gcs push my-chart-<semver>.tgz my-repository
+```bash
+gcloud auth application-default login
+helm gcs push chart.tgz my-repo
 ```
 
-Push the chart with additional option by providing metadata to the object :
+> 👤 Best for local development.
 
-```shell
-$ helm gcs push my-chart-<semver>.tgz my-repository --metadata env=my-env,region=europe-west4
+### Required IAM Permissions
+
+Your service account or user needs these permissions:
+- `storage.objects.get`
+- `storage.objects.create`
+- `storage.objects.delete`
+- `storage.objects.list`
+
+**Recommended IAM Role**: `Storage Object Admin` or `Storage Admin`
+
+---
+
+## 📖 Usage
+
+### Initialize Repository
+
+Create a new Helm repository in your GCS bucket:
+
+```bash
+helm gcs init gs://your-bucket/path/to/charts
 ```
 
-Push the chart with additional option by providing path inside bucket :
+**Options:**
+- Repository can be created anywhere in your bucket
+- Creates an empty `index.yaml` if it doesn't exist
+- Safe to run multiple times (idempotent)
 
-This would allow us to structure the content inside the bucket, and stores at `gs://your-bucket/my-application/my-chart-<semver>.tgz`
+**Example with nested path:**
 
-```shell
-$ helm gcs push my-chart-<semver>.tgz my-repository --bucketPath=my-application
+```bash
+helm gcs init gs://company-charts/production/stable
 ```
 
-If you got this error:
+### Add Repository to Helm
 
-```shell
+```bash
+helm repo add stable-charts gs://company-charts/production/stable
+helm repo add dev-charts gs://company-charts/development
+```
+
+Verify repositories:
+
+```bash
+helm repo list
+```
+
+### Push Charts
+
+#### Basic Push
+
+```bash
+# Package your chart
+helm package ./my-application
+
+# Push to repository
+helm gcs push my-application-1.0.0.tgz stable-charts
+```
+
+#### Push with Retry (Recommended for CI/CD)
+
+```bash
+helm gcs push my-application-1.0.0.tgz stable-charts --retry
+```
+
+> 🔄 Automatically retries if concurrent updates detected
+
+#### Push with Custom Metadata
+
+Add custom metadata to your chart object:
+
+```bash
+helm gcs push my-app-1.0.0.tgz stable-charts \
+  --metadata env=production,team=platform,region=us-central1
+```
+
+#### Push to Bucket Path
+
+Organize charts within your bucket:
+
+```bash
+helm gcs push my-app-1.0.0.tgz stable-charts --bucketPath=applications/backend
+```
+
+This stores the chart at: `gs://your-bucket/charts/applications/backend/my-app-1.0.0.tgz`
+
+#### Force Push
+
+Overwrite existing chart:
+
+```bash
+helm gcs push my-app-1.0.0.tgz stable-charts --force
+```
+
+> ⚠️ Use with caution - overwrites existing chart with same version
+
+#### Push with Public Access
+
+Make chart publicly accessible:
+
+```bash
+helm gcs push my-app-1.0.0.tgz stable-charts --public
+```
+
+### Remove Charts
+
+#### Remove Specific Version
+
+```bash
+helm gcs remove my-application stable-charts --version 1.0.0
+```
+
+#### Remove All Versions
+
+```bash
+helm gcs remove my-application stable-charts
+```
+
+> 💡 Don't forget to update your local cache: `helm repo update`
+
+---
+
+## 🔧 Advanced Features
+
+### Concurrent Updates
+
+helm-gcs uses optimistic locking to prevent index corruption during concurrent updates:
+
+```bash
+# If you see: "Error: index is out-of-date"
+# Simply retry the command or use --retry flag
+
+helm gcs push chart.tgz my-repo --retry
+```
+
+The plugin will automatically:
+1. Detect concurrent modification
+2. Fetch latest index
+3. Retry the operation
+4. Use exponential backoff
+
+### Debug Mode
+
+Enable detailed logging:
+
+```bash
+# Using environment variable
+export HELM_GCS_DEBUG=true
+helm gcs push chart.tgz my-repo
+
+# Or use global flag
+helm gcs push chart.tgz my-repo --debug
+```
+
+### Custom Repository URL
+
+Use custom domain or CDN:
+
+```bash
+helm gcs push chart.tgz my-repo \
+  --public \
+  --publicURL=https://charts.example.com
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+#### Authentication Errors
+
+```
+Error: failed to authenticate to GCS
+```
+
+**Solution:**
+1. Verify credentials: `gcloud auth list`
+2. Check `GOOGLE_APPLICATION_CREDENTIALS` path
+3. Ensure service account has required permissions
+4. Try: `gcloud auth application-default login`
+
+#### Index Out of Date
+
+```
 Error: update index file: index is out-of-date
 ```
 
-That means that someone/something updated the same repository, at the same time as you. You just need to execute the command again or, next time, use the `--retry` flag to automatically retry to push the chart.
-
-Once the chart is uploaded, use helm to fetch it:
-
-```shell
-# Update local repo cache if necessary
-# $ helm repo update
-
-$ helm fetch my-chart
+**Solution:** Use `--retry` flag for automatic retry:
+```bash
+helm gcs push chart.tgz my-repo --retry
 ```
 
-> This command does nothing if the same chart (name and version) already exists.
+#### Permission Denied
 
-> Using `--retry` is highly recommended in a CI/CD environment.
-
-### Remove a chart
-
-You can remove all the versions of a chart from a repository by running:
-
-```shell
-$ helm gcs remove my-chart my-repository
+```
+Error: googleapi: Error 403: Forbidden
 ```
 
-To remove a specific version, simply use the `--version` flag:
+**Solution:**
+1. Verify IAM permissions (need `Storage Object Admin`)
+2. Check bucket name is correct
+3. Ensure bucket exists: `gsutil ls gs://your-bucket`
 
-```shell
-$ helm gcs remove my-chart my-repository --version 0.1.0
+#### Chart Already Exists
+
+```
+Error: chart already indexed
 ```
 
-> Don't forget to run `helm repo up` after you remove a chart.
-
-## Troubleshooting
-
-You can use the global flag `--debug`, or set `HELM_GCS_DEBUG=true` to get more informations. Please write an issue if you find any bug.
-
-## Helm versions
-
-Starting from 0.3 helm-gcs works with Helm 3, if you want to use it with Helm 2 please install the latest version that supports it
-
-```shell
-helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.2.2 # helm 2 compatible
+**Solution:** Use `--force` to overwrite:
+```bash
+helm gcs push chart.tgz my-repo --force
 ```
+
+### Enable Debug Logging
+
+```bash
+export HELM_GCS_DEBUG=true
+helm gcs push chart.tgz my-repo --debug
+```
+
+### Get Help
+
+```bash
+helm gcs --help
+helm gcs push --help
+```
+
+---
+
+## 📊 Version Compatibility
+
+| helm-gcs Version | Helm Version | Go Version | Status |
+|------------------|--------------|------------|--------|
+| 0.6.x | Helm 4.x, 3.x | 1.25+ | ✅ Active |
+| 0.5.x | Helm 3.x | 1.24+ | ✅ Supported |
+| 0.4.x | Helm 3.x | 1.20+ | ⚠️ Deprecated |
+| 0.3.x | Helm 3.x | 1.16+ | ⚠️ Deprecated |
+| 0.2.x | Helm 2.x | 1.13+ | ❌ Unsupported |
+
+### Helm 2 Users
+
+For Helm 2 support, use version 0.2.2:
+
+```bash
+helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.2.2
+```
+
+> ⚠️ Helm 2 reached end-of-life. Please upgrade to Helm 3 or 4.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/hayorov/helm-gcs.git
+cd helm-gcs
+
+# Copy environment template
+cp .env.example .env
+# Edit .env with your GCS test bucket and credentials
+
+# Run tests
+go test -v ./...
+
+# Run integration tests (requires GCS credentials)
+go test -v -tags=integration ./pkg/repo
+
+# Build
+go build -o bin/helm-gcs ./cmd/helm-gcs
+```
+
+### Running Tests
+
+```bash
+# Unit tests
+go test -v -race ./...
+
+# Integration tests (requires GCS bucket)
+export GCS_TEST_BUCKET=gs://your-test-bucket/helm-gcs-tests
+go test -v -tags=integration ./pkg/repo
+
+# With debug logging
+export HELM_GCS_DEBUG=true
+go test -v -tags=integration ./pkg/repo
+```
+
+### Code Quality
+
+```bash
+# Format code
+gofmt -s -w .
+
+# Run linter
+golangci-lint run
+
+# Check code complexity
+gocyclo -over 19 cmd pkg
+
+# Vet code
+go vet ./...
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- [Helm](https://helm.sh/) - The package manager for Kubernetes
+- [Google Cloud Storage](https://cloud.google.com/storage/) - Object storage service
+- All our [contributors](https://github.com/hayorov/helm-gcs/graphs/contributors)
+
+---
+
+## 📞 Support
+
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/hayorov/helm-gcs/issues)
+- 💬 **Questions**: [GitHub Discussions](https://github.com/hayorov/helm-gcs/discussions)
+- 📖 **Documentation**: [Project Wiki](https://github.com/hayorov/helm-gcs/wiki)
+
+---
+
+<p align="center">
+  Made with ❤️ by the helm-gcs community
+</p>
+
+<p align="center">
+  <a href="https://github.com/hayorov/helm-gcs/stargazers">⭐ Star us on GitHub</a> •
+  <a href="https://github.com/hayorov/helm-gcs/issues">🐛 Report Bug</a> •
+  <a href="https://github.com/hayorov/helm-gcs/issues">✨ Request Feature</a>
+</p>

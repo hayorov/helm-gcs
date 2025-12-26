@@ -25,9 +25,10 @@ import (
 	"os"
 
 	"cloud.google.com/go/storage"
+	"github.com/spf13/cobra"
+
 	"github.com/hayorov/helm-gcs/pkg/gcs"
 	"github.com/hayorov/helm-gcs/pkg/repo"
-	"github.com/spf13/cobra"
 )
 
 var (

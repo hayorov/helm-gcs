@@ -13,8 +13,10 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/repo"
+	"github.com/joho/godotenv"
+	"helm.sh/helm/v4/pkg/chart/loader"
+	chartv2 "helm.sh/helm/v4/pkg/chart/v2"
+	repo "helm.sh/helm/v4/pkg/repo/v1"
 
 	"github.com/hayorov/helm-gcs/pkg/gcs"
 )
@@ -29,21 +31,76 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	// Load environment variables from .env file (if exists)
+	// Try loading from project root
+	envPath := "../../.env"
+	if err := godotenv.Load(envPath); err == nil {
+		fmt.Println("✓ Loaded environment variables from .env file")
+	} else {
+		// .env file not found or error reading - that's okay, will use system env vars
+		if _, err := os.Stat(envPath); os.IsNotExist(err) {
+			fmt.Println("ℹ No .env file found, using system environment variables")
+		}
+	}
+
 	// Check if integration tests should run
 	testBucket = os.Getenv("GCS_TEST_BUCKET")
 	if testBucket == "" {
 		fmt.Println("Skipping integration tests: GCS_TEST_BUCKET not set")
-		fmt.Println("To run integration tests: export GCS_TEST_BUCKET=gs://your-bucket/test-path")
+		fmt.Println("To run integration tests:")
+		fmt.Println("  1. Copy .env.example to .env and fill in GCS_TEST_BUCKET")
+		fmt.Println("  2. Or set: export GCS_TEST_BUCKET=gs://your-bucket/test-path")
 		os.Exit(0)
 	}
+
+	// Display authentication method
+	fmt.Println()
+	fmt.Println("========================================")
+	fmt.Println("Integration Test Configuration")
+	fmt.Println("========================================")
+	fmt.Printf("GCS Bucket: %s\n", testBucket)
+
+	// Check authentication method
+	if oauthToken := os.Getenv("GOOGLE_OAUTH_ACCESS_TOKEN"); oauthToken != "" {
+		fmt.Println("Auth Method: OAuth Access Token")
+		fmt.Printf("Token: %s...%s (length: %d)\n", oauthToken[:10], oauthToken[len(oauthToken)-10:], len(oauthToken))
+	} else if credsFile := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); credsFile != "" {
+		fmt.Println("Auth Method: Service Account Key File")
+		fmt.Printf("Credentials File: %s\n", credsFile)
+		// Verify file exists
+		if _, err := os.Stat(credsFile); os.IsNotExist(err) {
+			fmt.Printf("⚠ WARNING: Credentials file does not exist: %s\n", credsFile)
+		} else {
+			fmt.Println("✓ Credentials file exists")
+		}
+	} else {
+		fmt.Println("Auth Method: Application Default Credentials (ADC)")
+		fmt.Println("ℹ Using gcloud auth application-default credentials")
+	}
+
+	if debug := os.Getenv("HELM_GCS_DEBUG"); debug == "true" || debug == "1" {
+		fmt.Println("Debug Mode: ENABLED")
+		Debug = true
+	} else {
+		fmt.Println("Debug Mode: disabled")
+	}
+	fmt.Println("========================================")
+	fmt.Println()
 
 	// Create GCS client
 	var err error
 	gcsClient, err = gcs.NewClient("")
 	if err != nil {
-		fmt.Printf("Failed to create GCS client: %v\n", err)
+		fmt.Printf("❌ Failed to create GCS client: %v\n", err)
+		fmt.Println()
+		fmt.Println("Troubleshooting:")
+		fmt.Println("  1. Ensure GOOGLE_APPLICATION_CREDENTIALS points to a valid service account key")
+		fmt.Println("  2. Or run: gcloud auth application-default login")
+		fmt.Println("  3. Verify the service account has 'Storage Admin' or 'Storage Object Admin' role")
 		os.Exit(1)
 	}
+	fmt.Println("✓ GCS client created successfully")
+	fmt.Println()
 
 	// Run tests
 	code := m.Run()
@@ -152,9 +209,14 @@ func TestIntegration_PushChart(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Use helm to package the chart
-	chart, err := loader.Load(chartPath)
+	chartInterface, err := loader.Load(chartPath)
 	if err != nil {
 		t.Fatalf("Failed to load test chart: %v", err)
+	}
+
+	chart, ok := chartInterface.(*chartv2.Chart)
+	if !ok {
+		t.Fatalf("Failed to convert chart to v2.Chart")
 	}
 
 	packagedPath := filepath.Join(tmpDir, fmt.Sprintf("%s-%s.tgz", chart.Metadata.Name, chart.Metadata.Version))
@@ -222,9 +284,14 @@ func TestIntegration_RemoveChart(t *testing.T) {
 	chartPath := "../../testdata/charts/test-chart"
 	tmpDir := t.TempDir()
 
-	chart, err := loader.Load(chartPath)
+	chartInterface, err := loader.Load(chartPath)
 	if err != nil {
 		t.Fatalf("Failed to load test chart: %v", err)
+	}
+
+	chart, ok := chartInterface.(*chartv2.Chart)
+	if !ok {
+		t.Fatalf("Failed to convert chart to v2.Chart")
 	}
 
 	packagedPath := filepath.Join(tmpDir, fmt.Sprintf("%s-%s.tgz", chart.Metadata.Name, chart.Metadata.Version))
@@ -284,9 +351,14 @@ func TestIntegration_ConcurrentPush(t *testing.T) {
 	chartPath := "../../testdata/charts/test-chart"
 	tmpDir := t.TempDir()
 
-	chart, err := loader.Load(chartPath)
+	chartInterface, err := loader.Load(chartPath)
 	if err != nil {
 		t.Fatalf("Failed to load test chart: %v", err)
+	}
+
+	chart, ok := chartInterface.(*chartv2.Chart)
+	if !ok {
+		t.Fatalf("Failed to convert chart to v2.Chart")
 	}
 
 	packagedPath := filepath.Join(tmpDir, fmt.Sprintf("%s-%s.tgz", chart.Metadata.Name, chart.Metadata.Version))

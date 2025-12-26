@@ -2,7 +2,14 @@ name: test
 
 on:
   pull_request:
-    types: [synchronize]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'pkg/**'
+      - 'cmd/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/test.yml'
+      - '.golangci.yml'
 
 jobs:
   test:

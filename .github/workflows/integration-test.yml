@@ -21,9 +21,13 @@ name: integration-tests
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - 'pkg/**'
+      - 'cmd/**'
       - 'integration/**'
+      - 'go.mod'
+      - 'go.sum'
       - '.github/workflows/integration-test.yml'
 
 jobs:
@@ -94,6 +98,7 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
           helm version
+          echo "Helm version: $(helm version --short)"
 
       - name: Run integration tests
         env:
@@ -109,8 +114,8 @@ jobs:
           echo "========================================="
           echo ""
 
-          # Run integration tests
-          go test -v -race -timeout 10m -tags=integration ./pkg/repo 2>&1 | tee integration-test-output.log
+          # Run integration tests with enhanced output
+          go test -v -race -timeout 10m ./pkg/repo 2>&1 | tee integration-test-output.log
 
           # Check test results
           if [ ${PIPESTATUS[0]} -eq 0 ]; then

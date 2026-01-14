@@ -5,7 +5,7 @@ go 1.25.0
 toolchain go1.25.5
 
 require (
-	cloud.google.com/go/storage v1.58.0
+	cloud.google.com/go/storage v1.59.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1

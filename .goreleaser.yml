@@ -29,6 +29,8 @@ archives:
 
 # Sign the artifacts to enable Helm 4 plugin verification
 # Requires GPG_FINGERPRINT environment variable
+# NOTE: Signing will fail gracefully if GPG_FINGERPRINT is not set
+# To enable signing, set up GPG secrets in GitHub Actions (see RELEASE.md)
 signs:
   - cmd: gpg
     args:

@@ -32,13 +32,33 @@ jobs:
           go-version: "1.25"
       - name: Import GPG key
         id: import_gpg
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Check GPG Configuration
+        run: |
+          if [ -z "${{ steps.import_gpg.outputs.fingerprint }}" ]; then
+            echo "::warning::GPG key not configured. Plugin releases will not be signed."
+            echo "::warning::Helm 4 users will need to use --verify=false to install the plugin."
+            echo "::warning::See RELEASE.md for instructions on setting up GPG signing."
+          else
+            echo "✓ GPG key configured with fingerprint: ${{ steps.import_gpg.outputs.fingerprint }}"
+            echo "Plugin releases will be signed for Helm 4 compatibility."
+          fi
       - name: git cleanup
         run: git clean -fdx
       - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          version: latest
+          args: release --clean --skip=sign
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+        if: ${{ steps.import_gpg.outputs.fingerprint == '' }}
+      - name: Run GoReleaser (with signing)
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
@@ -46,3 +66,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+        if: ${{ steps.import_gpg.outputs.fingerprint != '' }}

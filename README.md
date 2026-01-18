@@ -90,6 +90,8 @@ Store, version, and distribute your Helm charts on GCS with the same ease and se
 helm plugin install https://github.com/hayorov/helm-gcs.git
 ```
 
+> **Note for Helm 4 users:** Starting with version 0.6.0, all plugin releases are signed with GPG to support Helm 4's plugin verification. Installation works seamlessly without needing `--verify=false`.
+
 ### Install Specific Version
 
 ```bash

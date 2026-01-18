@@ -57,6 +57,11 @@ jobs:
       contents: read
       id-token: write  # Required for Workload Identity Federation
 
+    strategy:
+      matrix:
+        helm-version: ['3', '4']
+      fail-fast: false
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -155,9 +160,9 @@ jobs:
           BUCKET_NAME=$(echo "${{ vars.GCS_TEST_BUCKET }}" | sed 's|gs://||' | cut -d'/' -f1)
           gsutil ls "gs://$BUCKET_NAME" || echo "Warning: Cannot list bucket contents"
 
-      - name: Install Helm
+      - name: Install Helm ${{ matrix.helm-version }}
         run: |
-          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-${{ matrix.helm-version }} | bash
           helm version
           echo "Helm version: $(helm version --short)"
 
@@ -207,7 +212,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-test-results
+          name: integration-test-results-helm-${{ matrix.helm-version }}
           path: |
             integration-test-output.log
           retention-days: 30

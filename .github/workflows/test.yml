@@ -52,17 +52,16 @@ jobs:
           /home/runner/go/bin/gocyclo -over 19 cmd pkg
       - name: Run unit tests
         run: |
-          go test -v -race -timeout 5m -coverprofile=coverage.out -covermode=atomic -json ./pkg/... > test-results.json 2>&1 || true
-          # Also run without JSON for readable output
-          go test -v -race -timeout 5m -coverprofile=coverage.out -covermode=atomic ./pkg/...
+          go install gotest.tools/gotestsum@latest
+          gotestsum --junitfile test-results.xml --format testname -- -race -timeout 5m -coverprofile=coverage.out -covermode=atomic ./pkg/...
 
       - name: Generate test report
         uses: dorny/test-reporter@v1
         if: always()
         with:
           name: Go Tests
-          path: test-results.json
-          reporter: go-json
+          path: test-results.xml
+          reporter: java-junit
           fail-on-error: false
 
       - name: Generate coverage report
@@ -91,7 +90,7 @@ jobs:
             coverage.out
             coverage.html
             coverage-summary.txt
-            test-results.json
+            test-results.xml
           retention-days: 14
 
       - name: Upload coverage to Codecov

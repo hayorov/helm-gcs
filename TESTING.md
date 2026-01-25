@@ -18,19 +18,24 @@ The project uses a multi-tier testing approach:
 
 ```
 helm-gcs/
+├── cmd/
+│   ├── helm-gcs/cmd/             # CLI plugin commands
+│   └── helm-gcs-getter/
+│       ├── main.go
+│       └── main_test.go          # Getter binary tests
 ├── pkg/
 │   ├── gcs/
 │   │   ├── gcs.go
-│   │   └── gcs_test.go          # Unit tests for GCS client
+│   │   └── gcs_test.go           # Unit tests for GCS client
 │   └── repo/
 │       ├── repo.go
-│       └── repo_test.go         # Unit tests for repository operations
+│       └── repo_test.go          # Unit tests for repository operations
 ├── integration/
-│   └── integration_test.go      # Integration tests with real GCS bucket
+│   └── integration_test.go       # Integration tests with real GCS bucket
 ├── testdata/
 │   └── charts/
-│       └── test-chart/          # Sample Helm chart for testing
-└── Makefile                     # Test automation
+│       └── test-chart/           # Sample Helm chart for testing
+└── Makefile                      # Test automation
 ```
 
 ### Test Categories

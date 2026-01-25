@@ -2,21 +2,40 @@
 
 This document describes the release process for helm-gcs, including GPG key setup for signing plugin artifacts to support Helm 4 verification.
 
+## Helm 4 Plugin Architecture
+
+Starting with v0.7.0, helm-gcs provides **two separate plugin packages** for Helm 4:
+
+| Plugin | Type | Purpose |
+|--------|------|---------|
+| `gcs` | `cli/v1` | CLI commands: `helm gcs init/push/rm` |
+| `gcs-getter` | `getter/v1` | Protocol handler for `gs://` URLs |
+
+This is required because Helm 4 enforces a "one plugin = one type" model.
+
+### Release Artifacts
+
+Each release includes:
+- `helm-gcs_<OS>_<arch>.tar.gz` - CLI binary archives
+- `helm-gcs-getter_<OS>_<arch>.tar.gz` - Getter binary archives
+- `*.prov` - GPG signatures for each archive
+- `checksums.txt` - SHA256 checksums
+
 ## Helm 4 Compatibility
 
-Starting with Helm 4, plugin verification is enabled by default. When users install a plugin, Helm checks for `.prov` (provenance) files alongside the plugin archives. These are GPG signatures that verify the authenticity and integrity of the plugin.
+Starting with Helm 4, plugin verification is enabled by default. When users install a plugin, Helm checks for `.prov` (provenance) files alongside the plugin archives.
 
-**Without .prov files:**
+**Installation (Helm 4):**
 ```bash
-$ helm plugin install https://github.com/hayorov/helm-gcs
-Error: plugin source does not support verification. Use --verify=false to skip verification
-```
+# Install both plugins
+helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v0.7.0/helm-gcs-plugin.tar.gz
+helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v0.7.0/helm-gcs-getter-plugin.tar.gz
 
-**With .prov files (properly signed):**
-```bash
-$ helm plugin install https://github.com/hayorov/helm-gcs
-Installing helm-gcs 0.6.2 ...
-Installed plugin: gcs
+# Verify
+helm plugin list
+# NAME        VERSION  TYPE       APIVERSION
+# gcs         0.7.0    cli/v1     v1
+# gcs-getter  0.7.0    getter/v1  v1
 ```
 
 ## GPG Key Setup

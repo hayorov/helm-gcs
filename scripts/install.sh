@@ -43,10 +43,10 @@ if [ "$helm_major_version" = "4" ]; then
     echo "for better compatibility with the new plugin system:"
     echo ""
     echo "  # CLI plugin (helm gcs init/push/rm)"
-    echo "  helm plugin install https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs-plugin.tar.gz"
+    echo "  helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v${version}/helm-gcs-plugin.tar.gz"
     echo ""
     echo "  # Getter plugin (gs:// protocol support)"
-    echo "  helm plugin install https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs-getter-plugin.tar.gz"
+    echo "  helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v${version}/helm-gcs-getter-plugin.tar.gz"
     echo ""
     echo "Continuing with legacy installation..."
     echo ""
@@ -79,7 +79,7 @@ case "${arch}" in
         ;;
 esac
 
-url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_${os}_${arch}.tar.gz"
+url="https://github.com/hayorov/helm-gcs/releases/download/v${version}/helm-gcs_${os}_${arch}.tar.gz"
 filename="helm-gcs_${os}_${arch}.tar.gz"
 
 echo "Downloading from: ${url}"

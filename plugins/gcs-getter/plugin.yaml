@@ -1,0 +1,17 @@
+apiVersion: v1
+type: getter/v1
+name: gcs-getter
+version: "0.7.0"
+runtime: subprocess
+sourceURL: https://github.com/hayorov/helm-gcs
+
+config:
+  protocols:
+    - gs
+
+runtimeConfig:
+  platformCommand:
+    - command: "${HELM_PLUGIN_DIR}/bin/helm-gcs-getter"
+  hooks:
+    install: "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"
+    update: "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"

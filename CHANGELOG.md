@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-01-25
+
+### Added
+
+- **Native Helm 4 support with separate plugin packages** - Helm 4 enforces "one plugin = one type" architecture, so helm-gcs now provides two separate plugin packages:
+  - `gcs` (`cli/v1`) - CLI plugin for `helm gcs init/push/rm` commands
+  - `gcs-getter` (`getter/v1`) - Getter plugin for `gs://` protocol support
+- **New `helm-gcs-getter` binary** - Dedicated getter binary for Helm 4's getter plugin system
+- **Plugin package tarballs** - Release artifacts now include:
+  - `helm-gcs-plugin.tar.gz` - CLI plugin package for Helm 4
+  - `helm-gcs-getter-plugin.tar.gz` - Getter plugin package for Helm 4
+
+### Changed
+
+- **Plugin architecture for Helm 4** - The plugin is now split into:
+  - `plugins/gcs/` - CLI plugin package with `plugin.yaml` and install script
+  - `plugins/gcs-getter/` - Getter plugin package with `plugin.yaml` and install script
+- **GoReleaser configuration** - Updated to build both `helm-gcs` and `helm-gcs-getter` binaries
+- **Installation instructions** - README updated with Helm 4-specific installation steps
+
+### Backwards Compatibility
+
+- **Helm 3 support maintained** - The root `plugin.yaml` and `scripts/install.sh` still work for Helm 3 users
+- **Legacy mode on Helm 4** - If installed from the Git repository, the plugin will work in legacy mode
+
 ## [0.6.3] - 2026-01-25
 
 ### Changed

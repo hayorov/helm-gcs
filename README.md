@@ -84,23 +84,52 @@ Store, version, and distribute your Helm charts on GCS with the same ease and se
 
 ## 📦 Installation
 
-### Install Latest Version
+### Helm 4
+
+Helm 4 requires separate installation of CLI and Getter plugins (due to Helm 4's one-plugin-one-type architecture):
+
+```bash
+# Install CLI plugin (provides: helm gcs init/push/rm commands)
+helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v0.7.0/helm-gcs-plugin.tar.gz
+
+# Install Getter plugin (provides: gs:// protocol support)
+helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v0.7.0/helm-gcs-getter-plugin.tar.gz
+```
+
+Verify installation:
+
+```bash
+helm plugin list
+# NAME        VERSION  TYPE       APIVERSION  PROVENANCE  SOURCE
+# gcs         0.7.0    cli/v1     v1          verified    https://github.com/hayorov/helm-gcs
+# gcs-getter  0.7.0    getter/v1  v1          verified    https://github.com/hayorov/helm-gcs
+```
+
+### Helm 3
 
 ```bash
 helm plugin install https://github.com/hayorov/helm-gcs.git
 ```
 
-> **Note for Helm 4 users:** Starting with version 0.6.0, all plugin releases are signed with GPG to support Helm 4's plugin verification. Installation works seamlessly without needing `--verify=false`.
-
 ### Install Specific Version
 
 ```bash
-helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.6.2
+# Helm 4
+helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v0.7.0/helm-gcs-plugin.tar.gz
+helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v0.7.0/helm-gcs-getter-plugin.tar.gz
+
+# Helm 3
+helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.7.0
 ```
 
 ### Update to Latest
 
 ```bash
+# Helm 4
+helm plugin update gcs
+helm plugin update gcs-getter
+
+# Helm 3
 helm plugin update gcs
 ```
 
@@ -404,13 +433,22 @@ helm gcs push --help
 
 ## 📊 Version Compatibility
 
-| helm-gcs Version | Helm Version | Go Version | Status |
-|------------------|--------------|------------|--------|
-| 0.6.x | Helm 4.x, 3.x | 1.25+ | ✅ Active |
-| 0.5.x | Helm 3.x | 1.24+ | ✅ Supported |
-| 0.4.x | Helm 3.x | 1.20+ | ⚠️ Deprecated |
-| 0.3.x | Helm 3.x | 1.16+ | ⚠️ Deprecated |
-| 0.2.x | Helm 2.x | 1.13+ | ❌ Unsupported |
+| helm-gcs Version | Helm Version | Go Version | Notes | Status |
+|------------------|--------------|------------|-------|--------|
+| 0.7.x | Helm 4.x (native) | 1.25+ | Two separate plugins (CLI + Getter) | ✅ Active |
+| 0.7.x | Helm 3.x (legacy) | 1.25+ | Single combined plugin | ✅ Active |
+| 0.6.x | Helm 4.x, 3.x | 1.25+ | Legacy mode on Helm 4 | ✅ Supported |
+| 0.5.x | Helm 3.x | 1.24+ | | ✅ Supported |
+| 0.4.x | Helm 3.x | 1.20+ | | ⚠️ Deprecated |
+| 0.3.x | Helm 3.x | 1.16+ | | ⚠️ Deprecated |
+| 0.2.x | Helm 2.x | 1.13+ | | ❌ Unsupported |
+
+### Helm 4 Architecture Note
+
+Helm 4 enforces a strict "one plugin = one type" model. A single plugin cannot be both a CLI plugin and a Getter plugin. Therefore, helm-gcs 0.7.0+ provides two separate plugin packages for Helm 4:
+
+- **gcs** (`cli/v1`) - Provides `helm gcs init/push/rm` commands
+- **gcs-getter** (`getter/v1`) - Provides `gs://` protocol support for `helm repo add`, `helm pull`, etc.
 
 ### Helm 2 Users
 

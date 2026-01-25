@@ -17,6 +17,9 @@
 bin/
 dist/
 
+# Plugin bin directories (for local development)
+plugins/*/bin/
+
 vendor
 
 .idea

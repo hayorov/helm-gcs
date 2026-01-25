@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e  # Exit on any error
+set -e
 
 # Ensure we're in the plugin directory
 if [ -z "$HELM_PLUGIN_DIR" ]; then
@@ -19,10 +19,37 @@ if [ ! -f plugin.yaml ]; then
     exit 1
 fi
 
-version="$(grep "version" plugin.yaml | cut -d '"' -f 2)"
+version="$(grep "version" plugin.yaml | head -1 | cut -d '"' -f 2)"
 if [ -z "$version" ]; then
     echo "Error: Could not extract version from plugin.yaml"
     exit 1
+fi
+
+# Detect Helm version
+helm_major_version=""
+if command -v helm > /dev/null 2>&1; then
+    helm_version_output=$(helm version --short 2>/dev/null || echo "")
+    helm_major_version=$(echo "$helm_version_output" | grep -oE 'v[0-9]+' | head -1 | tr -d 'v')
+fi
+
+# For Helm 4, recommend using the separate plugin packages
+if [ "$helm_major_version" = "4" ]; then
+    echo ""
+    echo "=========================================="
+    echo "  Helm 4 Detected"
+    echo "=========================================="
+    echo ""
+    echo "For Helm 4, we recommend installing the separate plugin packages"
+    echo "for better compatibility with the new plugin system:"
+    echo ""
+    echo "  # CLI plugin (helm gcs init/push/rm)"
+    echo "  helm plugin install https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs-plugin.tar.gz"
+    echo ""
+    echo "  # Getter plugin (gs:// protocol support)"
+    echo "  helm plugin install https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs-getter-plugin.tar.gz"
+    echo ""
+    echo "Continuing with legacy installation..."
+    echo ""
 fi
 
 echo "Installing helm-gcs ${version} ..."

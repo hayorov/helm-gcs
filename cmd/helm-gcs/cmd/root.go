@@ -31,6 +31,11 @@ import (
 	"github.com/hayorov/helm-gcs/pkg/repo"
 )
 
+// ServiceAccount returns the service account flag value for use by other packages
+func ServiceAccount() string {
+	return flagServiceAccount
+}
+
 var (
 	gcsClient *storage.Client
 

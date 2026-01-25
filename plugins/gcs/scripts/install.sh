@@ -45,7 +45,7 @@ case "$arch" in
         ;;
 esac
 
-url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_${os}_${arch}.tar.gz"
+url="https://github.com/hayorov/helm-gcs/releases/download/v${version}/helm-gcs_${os}_${arch}.tar.gz"
 filename="helm-gcs_${os}_${arch}.tar.gz"
 
 echo "Downloading from: ${url}"

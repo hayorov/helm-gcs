@@ -1,71 +1,109 @@
 #!/bin/sh
 
-cd $HELM_PLUGIN_DIR
-version="$(cat plugin.yaml | grep "version" | cut -d '"' -f 2)"
+set -e  # Exit on any error
+
+# Ensure we're in the plugin directory
+if [ -z "$HELM_PLUGIN_DIR" ]; then
+    echo "Error: HELM_PLUGIN_DIR is not set"
+    exit 1
+fi
+
+cd "$HELM_PLUGIN_DIR" || {
+    echo "Error: Cannot change to plugin directory: $HELM_PLUGIN_DIR"
+    exit 1
+}
+
+# Extract version from plugin.yaml
+if [ ! -f plugin.yaml ]; then
+    echo "Error: plugin.yaml not found in $HELM_PLUGIN_DIR"
+    exit 1
+fi
+
+version="$(grep "version" plugin.yaml | cut -d '"' -f 2)"
+if [ -z "$version" ]; then
+    echo "Error: Could not extract version from plugin.yaml"
+    exit 1
+fi
+
 echo "Installing helm-gcs ${version} ..."
 
-# Find correct archive name
+# Detect OS
 unameOut="$(uname -s)"
-
 case "${unameOut}" in
     Linux*)             os=Linux;;
     Darwin*)            os=Darwin;;
     CYGWIN*)            os=Cygwin;;
     MINGW*|MSYS_NT*)    os=windows;;
-    *)                  os="UNKNOWN:${unameOut}"
+    *)
+        echo "Unsupported OS: ${unameOut}"
+        exit 1
+        ;;
 esac
 
-arch=`uname -m`
+# Detect architecture
+arch="$(uname -m)"
+case "${arch}" in
+    aarch64)    arch=arm64;;
+    x86_64)     arch=x86_64;;
+    arm64)      arch=arm64;;
+    *)
+        echo "Unsupported architecture: ${arch}"
+        exit 1
+        ;;
+esac
 
-if echo "$os" | grep -qe '.*UNKNOWN.*'
-then
-    echo "Unsupported OS / architecture: ${os}_${arch}"
+url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_${os}_${arch}.tar.gz"
+filename="helm-gcs_${os}_${arch}.tar.gz"
+
+echo "Downloading from: ${url}"
+
+# Download archive
+if command -v curl > /dev/null 2>&1; then
+    if ! curl -sSL -o "$filename" "$url"; then
+        echo "Error: Failed to download $url"
+        exit 1
+    fi
+elif command -v wget > /dev/null 2>&1; then
+    if ! wget -q -O "$filename" "$url"; then
+        echo "Error: Failed to download $url"
+        exit 1
+    fi
+else
+    echo "Error: curl or wget is required"
     exit 1
 fi
 
-if [ "$arch" = 'aarch64' ]
-then
-    arch='arm64'
+# Verify download
+if [ ! -f "$filename" ]; then
+    echo "Error: Downloaded file not found: $filename"
+    exit 1
 fi
 
-url="https://github.com/hayorov/helm-gcs/releases/download/${version}/helm-gcs_${os}_${arch}.tar.gz"
+# Install binary
+rm -rf bin
+mkdir -p bin
 
-filename=`echo ${url} | sed -e "s/^.*\///g"`
-
-# Download archive
-if [ -n "$(command -v curl)" ]
-then
-    curl -sSL -O $url
-elif [ -n "$(command -v wget)" ]
-then
-    wget -q $url
-else
-    echo "Need curl or wget"
-    exit -1
+if ! tar xzf "$filename" -C bin; then
+    echo "Error: Failed to extract $filename"
+    rm -f "$filename"
+    exit 1
 fi
 
-# Install bin
-rm -rf bin && mkdir bin && tar xvf $filename -C bin > /dev/null && rm -f $filename
+rm -f "$filename"
 
+# Verify installation
+if [ ! -x "bin/helm-gcs" ]; then
+    echo "Error: helm-gcs binary not found or not executable"
+    exit 1
+fi
+
+echo ""
 echo "helm-gcs ${version} is correctly installed."
-echo
-
-echo "Init a new repository:"
-echo "  helm gcs init gs://bucket/path"
-echo
-
-echo "Add your repository to Helm:"
-echo "  helm repo add repo-name gs://bucket/path"
-echo
-
-echo "Push a chart to your repository:"
-echo "  helm gcs push chart.tar.gz repo-name"
-echo
-
-echo "Update Helm cache:"
-echo "  helm repo update"
-echo
-
-echo "Get your chart:"
-echo "  helm fetch repo-name/chart"
-echo
+echo ""
+echo "Usage:"
+echo "  helm gcs init gs://bucket/path              # Initialize repository"
+echo "  helm repo add repo-name gs://bucket/path    # Add repository to Helm"
+echo "  helm gcs push chart.tgz repo-name           # Push a chart"
+echo "  helm repo update                            # Update Helm cache"
+echo "  helm fetch repo-name/chart                  # Fetch a chart"
+echo ""

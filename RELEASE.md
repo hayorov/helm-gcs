@@ -15,7 +15,7 @@ Error: plugin source does not support verification. Use --verify=false to skip v
 **With .prov files (properly signed):**
 ```bash
 $ helm plugin install https://github.com/hayorov/helm-gcs
-Installing helm-gcs 0.6.0 ...
+Installing helm-gcs 0.6.2 ...
 Installed plugin: gcs
 ```
 
@@ -119,11 +119,11 @@ This requires:
 
 ```bash
 # Download a release archive and its .prov file
-curl -LO https://github.com/hayorov/helm-gcs/releases/download/v0.6.0/helm-gcs_Darwin_arm64.tar.gz
-curl -LO https://github.com/hayorov/helm-gcs/releases/download/v0.6.0/helm-gcs_Darwin_arm64.tar.gz.prov
+curl -LO https://github.com/hayorov/helm-gcs/releases/download/v0.6.2/helm-gcs_Darwin_arm64.tar.gz
+curl -LO https://github.com/hayorov/helm-gcs/releases/download/v0.6.2/helm-gcs_Darwin_arm64.tar.gz.prov
 
 # Import the public key (if not already imported)
-curl -L https://github.com/hayorov/helm-gcs/releases/download/v0.6.0/helm-gcs-public-key.asc | gpg --import
+curl -L https://github.com/hayorov/helm-gcs/releases/download/v0.6.2/helm-gcs-public-key.asc | gpg --import
 
 # Verify the signature
 gpg --verify helm-gcs_Darwin_arm64.tar.gz.prov helm-gcs_Darwin_arm64.tar.gz

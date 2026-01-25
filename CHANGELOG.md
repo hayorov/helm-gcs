@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-01-25
+
+### Fixed
+
+- **Critical: Fixed plugin installation failure** - The 0.6.1 release had a version mismatch in `plugin.yaml` that caused installation to fail silently, resulting in "unknown command gcs" error
+- **Improved install.sh error handling** - Installation script now properly validates all steps and reports clear error messages instead of failing silently
+  - Added `set -e` to exit on any error
+  - Added validation of `HELM_PLUGIN_DIR` environment variable
+  - Added verification that `plugin.yaml` exists before reading
+  - Added proper error handling for downloads (curl/wget)
+  - Added verification that binary was extracted successfully
+  - Improved architecture detection with explicit case handling
+
+### Changed
+
+- **Better installation feedback** - Installation now shows download URL and provides clearer success/failure messages
+- **Improved test coverage** - Added comprehensive unit tests, increasing `pkg/repo` coverage from 11% to 50%+
+
+### Added
+
+- **GitHub PR test reporting** - Test results and coverage now displayed directly in pull requests
+- **Test artifacts upload** - Coverage reports (HTML and text) now available as downloadable artifacts
+
+## [0.6.1] - 2026-01-18
+
+### Note
+
+⚠️ **This release has a known issue**: The `plugin.yaml` was incorrectly set to version `0.6.0`, causing installation failures. Please use version **0.6.2** instead.
+
 ## [0.6.0] - 2025-12-26
 
 ### Major Release - Helm v4 Migration

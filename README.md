@@ -95,7 +95,7 @@ helm plugin install https://github.com/hayorov/helm-gcs.git
 ### Install Specific Version
 
 ```bash
-helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.6.0
+helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.6.2
 ```
 
 ### Update to Latest

@@ -1,13 +1,16 @@
+# Legacy plugin.yaml for Helm 3 compatibility
+# For Helm 4, use the separate plugins in plugins/gcs/ and plugins/gcs-getter/
 name: "gcs"
-version: "0.6.3"
+version: "0.7.0"
 usage: "Chart repositories on Google Cloud Storage"
 description: |-
   Manage repositories on Google Cloud Storage
 command: "$HELM_PLUGIN_DIR/bin/helm-gcs"
 downloaders:
-- command: "scripts/pull.sh"
-  protocols:
-  - "gs"
+  - command: "$HELM_PLUGIN_DIR/bin/helm-gcs"
+    args: ["pull"]
+    protocols:
+      - "gs"
 hooks:
   install: "cd $HELM_PLUGIN_DIR; ./scripts/install.sh"
   update: "cd $HELM_PLUGIN_DIR; ./scripts/install.sh"

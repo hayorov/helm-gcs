@@ -104,10 +104,16 @@ make check
 # Build for current platform
 make build
 
-# Binary will be at: ./bin/helm-gcs
-./bin/helm-gcs version
+# Binaries will be at:
+./bin/helm-gcs version         # CLI plugin
+./bin/helm-gcs-getter --version # Getter plugin
 
-# Test the plugin locally
+# Test the plugins locally (Helm 4)
+helm plugin install ./plugins/gcs
+helm plugin install ./plugins/gcs-getter
+helm gcs version
+
+# Test legacy plugin (Helm 3)
 helm plugin install .
 helm gcs version
 ```
@@ -165,19 +171,36 @@ gsutil ls gs://helm-gcs-dev-tests
 
 ```
 helm-gcs/
-├── cmd/helm-gcs/           # CLI application
-│   ├── main.go            # Entry point
-│   └── cmd/               # Cobra commands
-├── pkg/                    # Core packages
-│   ├── gcs/               # GCS client wrapper
-│   └── repo/              # Repository operations
-├── integration/            # Integration tests
-├── testdata/              # Test fixtures
-├── .env.example           # Environment template
-├── Makefile               # Development automation
-├── TESTING.md             # Testing guide
-└── DEVELOPMENT.md         # This file
+├── cmd/
+│   ├── helm-gcs/              # CLI plugin binary
+│   │   ├── main.go           # Entry point
+│   │   └── cmd/              # Cobra commands (init, push, rm, etc.)
+│   └── helm-gcs-getter/       # Getter plugin binary (Helm 4)
+│       └── main.go           # Downloads from GCS to stdout
+├── pkg/                       # Core packages (shared)
+│   ├── gcs/                  # GCS client wrapper
+│   └── repo/                 # Repository operations
+├── plugins/                   # Helm 4 plugin packages
+│   ├── gcs/                  # CLI plugin (cli/v1)
+│   │   ├── plugin.yaml
+│   │   └── scripts/install.sh
+│   └── gcs-getter/           # Getter plugin (getter/v1)
+│       ├── plugin.yaml
+│       └── scripts/install.sh
+├── integration/              # Integration tests
+├── testdata/                 # Test fixtures
+├── plugin.yaml               # Legacy plugin manifest (Helm 3)
+├── .env.example              # Environment template
+├── Makefile                  # Development automation
+├── TESTING.md                # Testing guide
+└── DEVELOPMENT.md            # This file
 ```
+
+### Helm 4 Plugin Architecture
+
+Helm 4 requires separate plugin packages for different plugin types:
+- **gcs** (`cli/v1`) - CLI commands: `helm gcs init/push/rm`
+- **gcs-getter** (`getter/v1`) - Protocol handler for `gs://` URLs
 
 ## Common Tasks
 

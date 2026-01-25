@@ -10,7 +10,7 @@ Runs on every pull request:
 - Static analysis (go vet, golangci-lint)
 - Unit tests with race detector
 - Code coverage reporting
-- Binary build verification
+- Build verification for both binaries (`helm-gcs` and `helm-gcs-getter`)
 
 **No configuration required** - runs automatically on PRs.
 
@@ -18,9 +18,18 @@ Runs on every pull request:
 Runs on git tags:
 - Security scanning with Trivy
 - Multi-platform builds (Linux, macOS, Windows on amd64/arm64)
-- GitHub release creation
+- Builds both `helm-gcs` (CLI) and `helm-gcs-getter` (Getter) binaries
+- Creates signed archives with GPG (`.prov` files)
+- GitHub release creation with all artifacts
 
 **No configuration required** - runs automatically when tags are pushed.
+
+#### Release Artifacts
+Each release produces:
+- `helm-gcs_<OS>_<arch>.tar.gz` - CLI plugin binary
+- `helm-gcs-getter_<OS>_<arch>.tar.gz` - Getter plugin binary
+- `*.prov` - GPG signatures for Helm 4 verification
+- `checksums.txt` - SHA256 checksums
 
 ### integration-test.yml
 Runs integration tests against real GCS bucket:

@@ -5,8 +5,8 @@
 **helm-gcs** is a Helm plugin that enables managing private Helm chart repositories using Google Cloud Storage (GCS) as the backend storage. It allows developers to store, push, pull, and manage Helm charts in GCS buckets instead of traditional HTTP/S registries.
 
 **Repository**: https://github.com/hayorov/helm-gcs
-**Current Version**: 0.4.2
-**Language**: Go 1.24+ (toolchain 1.25.1)
+**Current Version**: 0.7.0
+**Language**: Go 1.25+ (toolchain 1.25.6)
 **License**: MIT
 
 ### Key Features
@@ -16,6 +16,7 @@
 - Multiple authentication methods (ADC, service account, OAuth token)
 - Concurrent update handling with optimistic locking
 - Cross-platform support (Linux, macOS, Windows on amd64/arm64)
+- **Helm 4 native support** with separate CLI and Getter plugins
 
 ---
 
@@ -37,23 +38,32 @@
 ### Directory Structure
 ```
 helm-gcs/
-├── cmd/helm-gcs/              # CLI entry point and commands
-│   ├── main.go               # Simple main() that calls cmd.Execute()
-│   └── cmd/                  # Cobra command definitions
-│       ├── root.go           # Root command with GCS client init
-│       ├── init.go           # Initialize repo command
-│       ├── push.go           # Push chart command
-│       ├── pull.go           # Pull chart command (Helm integration)
-│       ├── rm.go             # Remove chart command
-│       └── version.go        # Version command
-├── pkg/                      # Core business logic
-│   ├── gcs/                  # GCS client wrapper (53 lines)
-│   └── repo/                 # Repository operations (408 lines - main logic)
-├── scripts/                  # Helper scripts
-│   ├── install.sh           # Plugin installation
-│   └── pull.sh              # Wrapper for pull command
-├── plugin.yaml              # Helm plugin manifest
-└── .github/workflows/       # CI/CD pipelines
+├── cmd/
+│   ├── helm-gcs/              # CLI plugin binary
+│   │   ├── main.go           # Entry point for CLI commands
+│   │   └── cmd/              # Cobra command definitions
+│   │       ├── root.go       # Root command with GCS client init
+│   │       ├── init.go       # Initialize repo command
+│   │       ├── push.go       # Push chart command
+│   │       ├── pull.go       # Pull chart command
+│   │       ├── rm.go         # Remove chart command
+│   │       └── version.go    # Version command
+│   └── helm-gcs-getter/       # Getter plugin binary (Helm 4)
+│       └── main.go           # Downloads from GCS to stdout
+├── pkg/                       # Core business logic (shared)
+│   ├── gcs/                   # GCS client wrapper
+│   └── repo/                  # Repository operations
+├── plugins/                   # Helm 4 plugin packages
+│   ├── gcs/                   # CLI plugin (cli/v1)
+│   │   ├── plugin.yaml
+│   │   └── scripts/install.sh
+│   └── gcs-getter/            # Getter plugin (getter/v1)
+│       ├── plugin.yaml
+│       └── scripts/install.sh
+├── scripts/                   # Legacy scripts (Helm 3 compat)
+│   └── install.sh
+├── plugin.yaml                # Legacy plugin manifest (Helm 3)
+└── .github/workflows/         # CI/CD pipelines
 ```
 
 ---

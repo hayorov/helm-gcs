@@ -1,36 +1,86 @@
 # .goreleaser.yml
-# Build customization
+# Build configuration for helm-gcs Helm 4 plugins
 version: 2
+
 builds:
-  - main: ./cmd/helm-gcs/main.go
+  # CLI plugin binary (helm gcs init/push/rm)
+  - id: helm-gcs
+    main: ./cmd/helm-gcs/main.go
     binary: helm-gcs
-    ldflags: -s -w -X github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd.version={{.Version}} -X github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd.commit={{.Commit}} -X github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd.date={{.Date}}
+    ldflags:
+      - -s -w
+      - -X github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd.version={{.Version}}
+      - -X github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd.commit={{.Commit}}
+      - -X github.com/hayorov/helm-gcs/cmd/helm-gcs/cmd.date={{.Date}}
     goos:
-      - windows
-      - darwin
       - linux
+      - darwin
+      - windows
     goarch:
       - amd64
       - arm64
     env:
       - CGO_ENABLED=0
+
+  # Getter plugin binary (gs:// protocol handler)
+  - id: helm-gcs-getter
+    main: ./cmd/helm-gcs-getter/main.go
+    binary: helm-gcs-getter
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+
 archives:
+  # CLI plugin binary archives
   - id: helm-gcs
+    formats:
+      - tar.gz
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
+    ids:
+      - helm-gcs
     name_template: >-
-      {{ .ProjectName }}_
+      helm-gcs_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "arm64" }}arm64
       {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+  # Getter plugin binary archives
+  - id: helm-gcs-getter
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    ids:
+      - helm-gcs-getter
+    name_template: >-
+      helm-gcs-getter_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "arm64" }}arm64
+      {{- else }}{{ .Arch }}{{ end }}
+
+checksum:
+  name_template: "checksums.txt"
 
 # Sign the artifacts to enable Helm 4 plugin verification
 # Requires GPG_FINGERPRINT environment variable
-# NOTE: Signing will fail gracefully if GPG_FINGERPRINT is not set
-# To enable signing, set up GPG secrets in GitHub Actions (see RELEASE.md)
 signs:
   - cmd: gpg
     args:

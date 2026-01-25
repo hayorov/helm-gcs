@@ -1,0 +1,30 @@
+apiVersion: v1
+type: cli/v1
+name: gcs
+version: "0.7.0"
+runtime: subprocess
+sourceURL: https://github.com/hayorov/helm-gcs
+
+config:
+  usage: "gcs <command> [flags]"
+  shortHelp: "Manage Helm chart repositories on Google Cloud Storage"
+  longHelp: |
+    The gcs plugin allows you to manage Helm chart repositories
+    stored in Google Cloud Storage (GCS) buckets.
+
+    Commands:
+      init   Initialize a new chart repository in a GCS bucket
+      push   Push a chart to a GCS repository  
+      rm     Remove a chart from a GCS repository
+
+    Examples:
+      helm gcs init gs://my-bucket/charts
+      helm gcs push mychart-0.1.0.tgz my-repo
+      helm gcs rm mychart my-repo --version 0.1.0
+
+runtimeConfig:
+  platformCommand:
+    - command: "${HELM_PLUGIN_DIR}/bin/helm-gcs"
+  hooks:
+    install: "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"
+    update: "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"

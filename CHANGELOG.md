@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-01-25
+
+### Changed
+
+#### Dependencies
+
+- **Go**: Updated from 1.25.0 to 1.25.6 with toolchain 1.25.6
+- **cloud.google.com/go/storage**: v1.58.0 → v1.59.1
+- **google.golang.org/api**: v0.258.0 → v0.262.0
+- **helm.sh/helm/v4**: v4.0.4 → v4.1.0
+- **github.com/sirupsen/logrus**: v1.9.3 → v1.9.4
+
 ## [0.6.2] - 2026-01-25
 
 ### Fixed

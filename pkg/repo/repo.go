@@ -33,6 +33,18 @@ var (
 	// Debug is used to activate log output
 	Debug bool
 	log   = logger()
+
+	// gcsObjectFunc is a package-level function to get GCS object handles.
+	// This allows for mocking in tests.
+	gcsObjectFunc = gcs.Object
+
+	// chartLoader is a package-level function to load charts.
+	// This allows for mocking in tests.
+	chartLoader = loader.Load
+
+	// digestFile is a package-level function to compute chart digest.
+	// This allows for mocking in tests.
+	digestFile = provenance.DigestFile
 )
 
 // Repo manages Helm repositories on Google Cloud Storage.
@@ -81,17 +93,18 @@ func Load(name string, gcs *storage.Client) (*Repo, error) {
 func Create(r *Repo) error {
 	log.Debugf("create a repository with index file at %s", r.indexFileURL)
 
-	o, err := gcs.Object(r.gcs, r.indexFileURL)
+	o, err := gcsObjectFunc(r.gcs, r.indexFileURL)
 	if err != nil {
 		return errors.Wrap(err, "object")
 	}
 
-	_, err = o.NewReader(context.Background())
+	reader, err := o.NewReader(context.Background())
 	switch err {
 	case storage.ErrObjectNotExist:
 		i := repo.NewIndexFile()
 		return r.uploadIndexFile(i)
 	case nil:
+		_ = reader.Close()
 		log.Debugf("file %s already exists", r.indexFileURL)
 		return nil
 	default:
@@ -112,7 +125,7 @@ func (r Repo) PushChart(chartpath string, force, retry bool, public bool, public
 	}
 
 	log.Debugf("load chart \"%s\" (force=%t, retry=%t, public=%t)", chartpath, force, retry, public)
-	chartInterface, err := loader.Load(chartpath)
+	chartInterface, err := chartLoader(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "load chart")
 	}
@@ -191,7 +204,7 @@ func (r Repo) RemoveChart(name, version string, retry bool) error {
 		}
 
 		// Delete charts from GCS
-		if err := deleteChartFiles(r.gcs, urls); err != nil {
+		if err := deleteChartFiles(context.Background(), r.gcs, urls); err != nil {
 			return err
 		}
 		return nil
@@ -205,7 +218,7 @@ func (r Repo) uploadIndexFile(i *repo.IndexFile) error {
 	i.SortEntries()
 	i.Generated = time.Now()
 
-	o, err := gcs.Object(r.gcs, r.indexFileURL)
+	o, err := gcsObjectFunc(r.gcs, r.indexFileURL)
 	if err != nil {
 		return errors.Wrap(err, "object")
 	}
@@ -250,7 +263,7 @@ func (r *Repo) indexFile() (*repo.IndexFile, error) {
 	log.Debugf("load index file \"%s\"", r.indexFileURL)
 
 	// retrieve index file generation
-	o, err := gcs.Object(r.gcs, r.indexFileURL)
+	o, err := gcsObjectFunc(r.gcs, r.indexFileURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "object")
 	}
@@ -286,13 +299,15 @@ func (r Repo) uploadChart(chartpath string, metadata map[string]string) error {
 	if err != nil {
 		return errors.Wrap(err, "open")
 	}
+	defer func() { _ = f.Close() }()
+
 	_, fname := filepath.Split(chartpath)
 	chartURL, err := resolveReference(r.entry.URL, fname)
 	if err != nil {
 		return errors.Wrap(err, "resolve reference")
 	}
 	log.Debugf("upload file %s to gcs path %s", fname, chartURL)
-	o, err := gcs.Object(r.gcs, chartURL)
+	o, err := gcsObjectFunc(r.gcs, chartURL)
 	if err != nil {
 		return errors.Wrap(err, "object")
 	}
@@ -314,16 +329,20 @@ func (r Repo) uploadChart(chartpath string, metadata map[string]string) error {
 }
 
 func (r Repo) updateIndexFile(i *repo.IndexFile, chartpath string, chart *chartv2.Chart, public bool, publicURL string, bucketPath string) error {
-	hash, err := provenance.DigestFile(chartpath)
+	hash, err := digestFile(chartpath)
 	if err != nil {
 		return errors.Wrap(err, "generate chart file digest")
 	}
 
+	base := r.entry.URL
 	if bucketPath != "" {
-		r.entry.URL = fmt.Sprintf("%s/%s", r.entry.URL, bucketPath)
+		base, err = resolveReference(base, bucketPath)
+		if err != nil {
+			return errors.Wrap(err, "resolve bucketPath")
+		}
 	}
 
-	url, err := getURL(r.entry.URL, public, publicURL)
+	url, err := getURL(base, public, publicURL)
 	if err != nil {
 		return errors.Wrap(err, "get chart base url")
 	}
@@ -355,8 +374,14 @@ func getURL(base string, public bool, publicURL string) (string, error) {
 	}
 	if public && publicURL != "" {
 		return publicURL, nil
-	} else if public {
-		return fmt.Sprintf("https://storage.googleapis.com/%s/%s", baseURL.Host, baseURL.Path), nil
+	}
+	if public {
+		u := &url.URL{
+			Scheme: "https",
+			Host:   "storage.googleapis.com",
+			Path:   path.Join(baseURL.Host, baseURL.Path),
+		}
+		return u.String(), nil
 	}
 	return baseURL.String(), nil
 }
@@ -412,16 +437,15 @@ func removeChartVersion(vs []*repo.ChartVersion, idx int) []*repo.ChartVersion {
 }
 
 // deleteChartFiles deletes multiple chart files from GCS
-func deleteChartFiles(client *storage.Client, urls []string) error {
-	for _, url := range urls {
-		o, err := gcs.Object(client, url)
+func deleteChartFiles(ctx context.Context, client *storage.Client, urls []string) error {
+	for _, objectURL := range urls {
+		o, err := gcsObjectFunc(client, objectURL)
 		if err != nil {
 			return errors.Wrap(err, "object")
 		}
 
-		log.Debugf("delete gcs file %s", url)
-		err = o.Delete(context.Background())
-		if err != nil {
+		log.Debugf("delete gcs file %s", objectURL)
+		if err := o.Delete(ctx); err != nil {
 			return errors.Wrap(err, "delete")
 		}
 	}

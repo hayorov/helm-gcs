@@ -57,7 +57,7 @@ jobs:
 
       - name: Generate test report
         uses: dorny/test-reporter@v1
-        if: always()
+        if: always() && hashFiles('test-results.xml') != ''
         with:
           name: Go Tests
           path: test-results.xml

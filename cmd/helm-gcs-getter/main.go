@@ -76,7 +76,7 @@ func download(href, serviceAccount string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create GCS client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	obj, err := gcs.Object(client, href)
 	if err != nil {
@@ -87,7 +87,7 @@ func download(href, serviceAccount string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read from GCS: %w", err)
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {

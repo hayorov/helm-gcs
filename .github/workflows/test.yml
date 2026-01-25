@@ -51,7 +51,48 @@ jobs:
           go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
           /home/runner/go/bin/gocyclo -over 19 cmd pkg
       - name: Run unit tests
-        run: go test -v -race -timeout 5m -coverprofile=coverage.out -covermode=atomic ./pkg/...
+        run: |
+          go install gotest.tools/gotestsum@latest
+          gotestsum --junitfile test-results.xml --format testname -- -race -timeout 5m -coverprofile=coverage.out -covermode=atomic ./pkg/...
+
+      - name: Generate test report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Go Tests
+          path: test-results.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Generate coverage report
+        run: |
+          go tool cover -func=coverage.out > coverage-summary.txt
+          go tool cover -html=coverage.out -o coverage.html
+          echo "## 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          TOTAL=$(grep "total:" coverage-summary.txt | awk '{print $NF}')
+          echo "**Total Coverage: ${TOTAL}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary>Detailed Coverage by Function</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat coverage-summary.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            coverage.out
+            coverage.html
+            coverage-summary.txt
+            test-results.xml
+          retention-days: 14
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -59,6 +100,60 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
+
+      - name: Post coverage summary as PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverageSummary = fs.readFileSync('coverage-summary.txt', 'utf8');
+            const totalMatch = coverageSummary.match(/total:\s+\(statements\)\s+([\d.]+)%/);
+            const totalCoverage = totalMatch ? totalMatch[1] : 'N/A';
+            
+            const body = `## 📊 Test Coverage Summary
+            
+            **Overall Coverage: ${totalCoverage}%**
+            
+            <details>
+            <summary>Click to see detailed coverage</summary>
+            
+            \`\`\`
+            ${coverageSummary}
+            \`\`\`
+            
+            </details>
+            
+            ${parseFloat(totalCoverage) >= 50 ? '✅ Coverage meets minimum threshold (50%)' : '⚠️ Coverage below minimum threshold (50%)'}
+            `;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('📊 Test Coverage Summary')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
       - name: Build binary
         run: go build -o bin/helm-gcs ./cmd/helm-gcs/main.go
       - name: Verify binary

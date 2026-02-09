@@ -11,7 +11,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/oauth2 v0.34.0
 	google.golang.org/api v0.262.0
-	helm.sh/helm/v4 v4.1.0
+	helm.sh/helm/v4 v4.1.1
 )
 
 require (

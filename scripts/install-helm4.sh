@@ -94,8 +94,11 @@ config:
     - gs
 
 runtimeConfig:
-  platformCommand:
-    - command: "\${HELM_PLUGIN_DIR}/bin/${binary}"
+  protocolCommands:
+  - protocols:
+      - gs
+    platformCommand:
+      - command: "bin/${binary}"
 EOF
     fi
     

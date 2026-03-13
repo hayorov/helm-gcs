@@ -10,8 +10,15 @@ config:
     - gs
 
 runtimeConfig:
-  platformCommand:
-    - command: "${HELM_PLUGIN_DIR}/bin/helm-gcs-getter"
-  hooks:
-    install: "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"
-    update: "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"
+  protocolCommands:
+    - protocols:
+        - gs
+      platformCommand:
+        - command: "bin/helm-gcs-getter"
+  platformHooks:
+    install:
+      - command: "sh"
+        args: ["-c", "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"]
+    update:
+      - command: "sh"
+        args: ["-c", "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"]

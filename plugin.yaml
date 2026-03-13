@@ -7,8 +7,7 @@ description: |-
   Manage repositories on Google Cloud Storage
 command: "$HELM_PLUGIN_DIR/bin/helm-gcs"
 downloaders:
-  - command: "$HELM_PLUGIN_DIR/bin/helm-gcs"
-    args: ["pull"]
+  - command: "bin/helm-gcs-getter"
     protocols:
       - "gs"
 hooks:

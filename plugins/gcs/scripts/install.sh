@@ -45,8 +45,14 @@ case "$arch" in
         ;;
 esac
 
-url="https://github.com/hayorov/helm-gcs/releases/download/v${version}/helm-gcs_${os}_${arch}.tar.gz"
-filename="helm-gcs_${os}_${arch}.tar.gz"
+if [ "$os" = "Windows" ]; then
+    ext="zip"
+else
+    ext="tar.gz"
+fi
+
+url="https://github.com/hayorov/helm-gcs/releases/download/v${version}/helm-gcs_${os}_${arch}.${ext}"
+filename="helm-gcs_${os}_${arch}.${ext}"
 
 echo "Downloading from: ${url}"
 
@@ -67,11 +73,19 @@ else
     exit 1
 fi
 
-tar xzf "$filename" -C bin || {
-    echo "Error: Failed to extract $filename"
-    rm -f "$filename"
-    exit 1
-}
+if [ "$ext" = "zip" ]; then
+    unzip -q -o "$filename" -d bin || {
+        echo "Error: Failed to extract $filename"
+        rm -f "$filename"
+        exit 1
+    }
+else
+    tar xzf "$filename" -C bin || {
+        echo "Error: Failed to extract $filename"
+        rm -f "$filename"
+        exit 1
+    }
+fi
 
 rm -f "$filename"
 

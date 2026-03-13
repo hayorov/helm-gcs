@@ -25,6 +25,10 @@ config:
 runtimeConfig:
   platformCommand:
     - command: "${HELM_PLUGIN_DIR}/bin/helm-gcs"
-  hooks:
-    install: "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"
-    update: "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"
+  platformHooks:
+    install:
+      - command: "sh"
+        args: ["-c", "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"]
+    update:
+      - command: "sh"
+        args: ["-c", "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"]

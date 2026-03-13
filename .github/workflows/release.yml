@@ -67,3 +67,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
         if: ${{ steps.import_gpg.outputs.fingerprint != '' }}
+      - name: Package and upload Helm 4 sub-plugin tarballs
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          cp -r plugins/gcs helm-gcs-plugin
+          tar czf helm-gcs-plugin.tar.gz helm-gcs-plugin
+          cp -r plugins/gcs-getter helm-gcs-getter-plugin
+          tar czf helm-gcs-getter-plugin.tar.gz helm-gcs-getter-plugin
+          gh release upload "$tag" helm-gcs-plugin.tar.gz helm-gcs-getter-plugin.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -25,10 +25,12 @@ if [ -z "$version" ]; then
     exit 1
 fi
 
-# Detect Helm version
+# Detect Helm version using $HELM_BIN (set by Helm itself) to avoid
+# picking up a different helm version that happens to be on PATH.
 helm_major_version=""
-if command -v helm > /dev/null 2>&1; then
-    helm_version_output=$(helm version --short 2>/dev/null || echo "")
+helm_bin="${HELM_BIN:-helm}"
+if command -v "$helm_bin" > /dev/null 2>&1; then
+    helm_version_output=$("$helm_bin" version --short 2>/dev/null || echo "")
     helm_major_version=$(echo "$helm_version_output" | grep -oE 'v[0-9]+' | head -1 | tr -d 'v')
 fi
 
@@ -60,7 +62,7 @@ case "${unameOut}" in
     Linux*)             os=Linux;;
     Darwin*)            os=Darwin;;
     CYGWIN*)            os=Cygwin;;
-    MINGW*|MSYS_NT*)    os=windows;;
+    MINGW*|MSYS_NT*)    os=Windows;;
     *)
         echo "Unsupported OS: ${unameOut}"
         exit 1
@@ -79,48 +81,71 @@ case "${arch}" in
         ;;
 esac
 
-url="https://github.com/hayorov/helm-gcs/releases/download/v${version}/helm-gcs_${os}_${arch}.tar.gz"
-filename="helm-gcs_${os}_${arch}.tar.gz"
-
-echo "Downloading from: ${url}"
-
-# Download archive
-if command -v curl > /dev/null 2>&1; then
-    if ! curl -sSL -o "$filename" "$url"; then
-        echo "Error: Failed to download $url"
-        exit 1
-    fi
-elif command -v wget > /dev/null 2>&1; then
-    if ! wget -q -O "$filename" "$url"; then
-        echo "Error: Failed to download $url"
-        exit 1
-    fi
+if [ "$os" = "Windows" ]; then
+    ext="zip"
 else
-    echo "Error: curl or wget is required"
-    exit 1
+    ext="tar.gz"
 fi
 
-# Verify download
-if [ ! -f "$filename" ]; then
-    echo "Error: Downloaded file not found: $filename"
-    exit 1
-fi
-
-# Install binary
 rm -rf bin
 mkdir -p bin
 
-if ! tar xzf "$filename" -C bin; then
-    echo "Error: Failed to extract $filename"
+base_url="https://github.com/hayorov/helm-gcs/releases/download/v${version}"
+
+for binary in helm-gcs helm-gcs-getter; do
+    filename="${binary}_${os}_${arch}.${ext}"
+    url="${base_url}/${filename}"
+
+    echo "Downloading from: ${url}"
+
+    # Download archive
+    if command -v curl > /dev/null 2>&1; then
+        if ! curl -sSL -o "$filename" "$url"; then
+            echo "Error: Failed to download $url"
+            exit 1
+        fi
+    elif command -v wget > /dev/null 2>&1; then
+        if ! wget -q -O "$filename" "$url"; then
+            echo "Error: Failed to download $url"
+            exit 1
+        fi
+    else
+        echo "Error: curl or wget is required"
+        exit 1
+    fi
+
+    # Verify download
+    if [ ! -f "$filename" ]; then
+        echo "Error: Downloaded file not found: $filename"
+        exit 1
+    fi
+
+    # Extract archive
+    if [ "$ext" = "zip" ]; then
+        if ! unzip -q -o "$filename" -d bin; then
+            echo "Error: Failed to extract $filename"
+            rm -f "$filename"
+            exit 1
+        fi
+    else
+        if ! tar xzf "$filename" -C bin; then
+            echo "Error: Failed to extract $filename"
+            rm -f "$filename"
+            exit 1
+        fi
+    fi
+
     rm -f "$filename"
+done
+
+# Verify installation
+if [ ! -x "bin/helm-gcs" ] && [ ! -f "bin/helm-gcs.exe" ]; then
+    echo "Error: helm-gcs binary not found or not executable"
     exit 1
 fi
 
-rm -f "$filename"
-
-# Verify installation
-if [ ! -x "bin/helm-gcs" ]; then
-    echo "Error: helm-gcs binary not found or not executable"
+if [ ! -x "bin/helm-gcs-getter" ] && [ ! -f "bin/helm-gcs-getter.exe" ]; then
+    echo "Error: helm-gcs-getter binary not found or not executable"
     exit 1
 fi
 

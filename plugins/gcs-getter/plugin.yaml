@@ -1,24 +1,35 @@
-apiVersion: v1
-type: getter/v1
 name: gcs-getter
-version: "0.7.0"
-runtime: subprocess
-sourceURL: https://github.com/hayorov/helm-gcs
-
-config:
-  protocols:
-    - gs
-
-runtimeConfig:
-  protocolCommands:
-    - protocols:
-        - gs
-      platformCommand:
-        - command: "bin/helm-gcs-getter"
-  platformHooks:
-    install:
-      - command: "sh"
-        args: ["-c", "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"]
-    update:
-      - command: "sh"
-        args: ["-c", "cd $HELM_PLUGIN_DIR && ./scripts/install.sh"]
+version: "0.8.0"
+usage: "gs:// protocol handler for Helm"
+description: |-
+  Downloads Helm charts from Google Cloud Storage (GCS) buckets
+  using the gs:// protocol scheme.
+downloaders:
+  - command: "bin/helm-gcs-getter"
+    protocols:
+      - "gs"
+platformCommand:
+  - command: "${HELM_PLUGIN_DIR}/bin/helm-gcs-getter"
+  - os: windows
+    command: "${HELM_PLUGIN_DIR}\\bin\\helm-gcs-getter.exe"
+platformHooks:
+  install:
+    - command: "${HELM_PLUGIN_DIR}/scripts/install.sh"
+    - os: windows
+      command: "powershell.exe"
+      args:
+        - "-NoProfile"
+        - "-ExecutionPolicy"
+        - "Bypass"
+        - "-File"
+        - "${HELM_PLUGIN_DIR}\\scripts\\install.ps1"
+  update:
+    - command: "${HELM_PLUGIN_DIR}/scripts/install.sh"
+    - os: windows
+      command: "powershell.exe"
+      args:
+        - "-NoProfile"
+        - "-ExecutionPolicy"
+        - "Bypass"
+        - "-File"
+        - "${HELM_PLUGIN_DIR}\\scripts\\install.ps1"

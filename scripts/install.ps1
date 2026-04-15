@@ -9,20 +9,76 @@ if (-not $env:HELM_PLUGIN_DIR) {
 Set-Location $env:HELM_PLUGIN_DIR
 
 # Extract version from plugin.yaml
-if (-not (Test-Path "plugin.yaml")) {
+# On Helm 4 the install hook runs after plugin.yaml is renamed, so check .bak too
+$pluginFile = if (Test-Path "plugin.yaml") { "plugin.yaml" }
+              elseif (Test-Path "plugin.yaml.bak") { "plugin.yaml.bak" }
+              else { $null }
+if (-not $pluginFile) {
     Write-Error "plugin.yaml not found in $env:HELM_PLUGIN_DIR"
     exit 1
 }
 
-$versionLine = Select-String -Path "plugin.yaml" -Pattern 'version:' | Select-Object -First 1
+$versionLine = Select-String -Path $pluginFile -Pattern 'version:' | Select-Object -First 1
 if (-not $versionLine) {
-    Write-Error "Could not extract version from plugin.yaml"
+    Write-Error "Could not extract version from $pluginFile"
     exit 1
 }
 $version = ($versionLine.Line -replace '.*version:\s*"?([^"]+)"?.*', '$1').Trim()
 if (-not $version) {
-    Write-Error "Could not extract version from plugin.yaml"
+    Write-Error "Could not extract version from $pluginFile"
     exit 1
+}
+
+# Detect architecture
+$arch = switch ($env:PROCESSOR_ARCHITECTURE) {
+    "AMD64"  { "x86_64" }
+    "ARM64"  { "arm64" }
+    default  {
+        Write-Error "Unsupported architecture: $env:PROCESSOR_ARCHITECTURE"
+        exit 1
+    }
+}
+
+$baseUrl = "https://github.com/hayorov/helm-gcs/releases/download/v${version}"
+
+function Download-Binary {
+    param(
+        [string]$Binary,
+        [string]$Dest
+    )
+
+    if (-not (Test-Path $Dest)) {
+        New-Item -ItemType Directory -Path $Dest -Force | Out-Null
+    }
+
+    $filename = "${Binary}_Windows_${arch}.zip"
+    $url = "${baseUrl}/${filename}"
+    $outPath = Join-Path $Dest $filename
+
+    Write-Host "Downloading from: ${url}"
+
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $outPath -UseBasicParsing
+    } catch {
+        Write-Error "Failed to download ${url}: $_"
+        exit 1
+    }
+
+    try {
+        Expand-Archive -Path $outPath -DestinationPath $Dest -Force
+    } catch {
+        Remove-Item -Force $outPath -ErrorAction SilentlyContinue
+        Write-Error "Failed to extract ${filename}: $_"
+        exit 1
+    }
+
+    Remove-Item -Force $outPath -ErrorAction SilentlyContinue
+
+    $exePath = Join-Path $Dest "${Binary}.exe"
+    if (-not (Test-Path $exePath)) {
+        Write-Error "${Binary}.exe not found after extraction in ${Dest}"
+        exit 1
+    }
 }
 
 # Detect Helm version using $HELM_BIN (set by Helm itself) to avoid
@@ -38,39 +94,53 @@ try {
     # helm not found or version failed; fall through
 }
 
-# For Helm 4, recommend using the separate plugin packages
 if ($helmMajorVersion -eq "4") {
-    Write-Host ""
-    Write-Host "=========================================="
-    Write-Host "  Helm 4 Detected"
-    Write-Host "=========================================="
-    Write-Host ""
-    Write-Host "For Helm 4, we recommend installing the separate plugin packages"
-    Write-Host "for better compatibility with the new plugin system:"
-    Write-Host ""
-    Write-Host "  # CLI plugin (helm gcs init/push/rm)"
-    Write-Host "  helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v${version}/helm-gcs-plugin.tar.gz"
-    Write-Host ""
-    Write-Host "  # Getter plugin (gs:// protocol support)"
-    Write-Host "  helm plugin install https://github.com/hayorov/helm-gcs/releases/download/v${version}/helm-gcs-getter-plugin.tar.gz"
-    Write-Host ""
-    Write-Host "Continuing with legacy installation..."
-    Write-Host ""
-}
+    Write-Host "Helm 4 detected -- installing sub-plugins for full cli + getter support..."
 
-Write-Host "Installing helm-gcs ${version} ..."
+    $pluginsDir = Split-Path $env:HELM_PLUGIN_DIR -Parent
 
-# Detect architecture
-$arch = switch ($env:PROCESSOR_ARCHITECTURE) {
-    "AMD64"  { "x86_64" }
-    "ARM64"  { "arm64" }
-    default  {
-        Write-Error "Unsupported architecture: $env:PROCESSOR_ARCHITECTURE"
-        exit 1
+    $entries = @(
+        @{ SrcDir = "gcs";        Binary = "helm-gcs";        DestName = "helm-gcs-plugin" },
+        @{ SrcDir = "gcs-getter"; Binary = "helm-gcs-getter"; DestName = "helm-gcs-getter-plugin" }
+    )
+
+    foreach ($entry in $entries) {
+        $src  = Join-Path $env:HELM_PLUGIN_DIR "plugins\$($entry.SrcDir)"
+        $dest = Join-Path $pluginsDir $entry.DestName
+
+        if (-not (Test-Path $src)) {
+            Write-Error "Sub-plugin source not found: $src"
+            exit 1
+        }
+
+        if (Test-Path $dest) {
+            Remove-Item -Recurse -Force $dest
+        }
+        Copy-Item -Recurse $src $dest
+
+        $binDir = Join-Path $dest "bin"
+        Download-Binary -Binary $entry.Binary -Dest $binDir
     }
+
+    # Disable the root plugin so Helm 4 doesn't see a duplicate "gcs" plugin
+    $rootYaml = Join-Path $env:HELM_PLUGIN_DIR "plugin.yaml"
+    if (Test-Path $rootYaml) {
+        Rename-Item $rootYaml "plugin.yaml.bak" -Force -ErrorAction SilentlyContinue
+    }
+
+    Write-Host ""
+    Write-Host "helm-gcs ${version} installed for Helm 4."
+    Write-Host ""
+    Write-Host "  helm gcs init gs://bucket/path         # Initialize repository"
+    Write-Host "  helm repo add myrepo gs://bucket/path   # Add repository"
+    Write-Host "  helm gcs push chart.tgz myrepo          # Push a chart"
+    Write-Host "  helm gcs rm chart myrepo                # Remove a chart"
+    Write-Host ""
+    exit 0
 }
 
-$baseUrl = "https://github.com/hayorov/helm-gcs/releases/download/v${version}"
+# Helm 3: legacy single-plugin install (both binaries into this plugin's bin/)
+Write-Host "Installing helm-gcs ${version} ..."
 
 if (Test-Path "bin") {
     Remove-Item -Recurse -Force "bin"
@@ -78,38 +148,7 @@ if (Test-Path "bin") {
 New-Item -ItemType Directory -Path "bin" | Out-Null
 
 foreach ($binary in @("helm-gcs", "helm-gcs-getter")) {
-    $filename = "${binary}_Windows_${arch}.zip"
-    $url = "${baseUrl}/${filename}"
-
-    Write-Host "Downloading from: ${url}"
-
-    try {
-        Invoke-WebRequest -Uri $url -OutFile $filename -UseBasicParsing
-    } catch {
-        Write-Error "Failed to download ${url}: $_"
-        exit 1
-    }
-
-    try {
-        Expand-Archive -Path $filename -DestinationPath "bin" -Force
-    } catch {
-        Remove-Item -Force $filename -ErrorAction SilentlyContinue
-        Write-Error "Failed to extract ${filename}: $_"
-        exit 1
-    }
-
-    Remove-Item -Force $filename -ErrorAction SilentlyContinue
-}
-
-# Verify installation
-if (-not (Test-Path "bin\helm-gcs.exe")) {
-    Write-Error "helm-gcs.exe binary not found after extraction"
-    exit 1
-}
-
-if (-not (Test-Path "bin\helm-gcs-getter.exe")) {
-    Write-Error "helm-gcs-getter.exe binary not found after extraction"
-    exit 1
+    Download-Binary -Binary $binary -Dest "bin"
 }
 
 Write-Host ""

@@ -84,44 +84,37 @@ Store, version, and distribute your Helm charts on GCS with the same ease and se
 
 ## 📦 Installation
 
-### Helm 4
+The install source is the same for Helm 3 and Helm 4:
 
-**One-line install** (recommended):
+- Helm 4 installs the native `gcs` + `gcs-getter` plugin pair automatically
+- Helm 3 installs the legacy single-plugin layout automatically
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/hayorov/helm-gcs/master/scripts/install-helm4.sh | sh
-```
-
-Or specify a version:
+### Install Latest
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hayorov/helm-gcs/master/scripts/install-helm4.sh | HELM_GCS_VERSION=0.7.0 sh
+# Helm 4
+helm plugin install https://github.com/hayorov/helm-gcs.git --verify=false
+
+# Helm 3
+helm plugin install https://github.com/hayorov/helm-gcs.git
 ```
 
-This installs both required plugins:
-- **gcs** (CLI) - provides `helm gcs init/push/rm` commands
-- **gcs-getter** (Getter) - provides `gs://` protocol support
+This installs:
+- Helm 4: `gcs` (CLI) and `gcs-getter` (Getter)
+- Helm 3: `gcs` (single combined plugin)
 
 Verify installation:
 
 ```bash
 helm plugin list
-# NAME        VERSION  TYPE       APIVERSION  PROVENANCE  SOURCE
-# gcs         0.7.0    cli/v1     v1          verified    https://github.com/hayorov/helm-gcs
-# gcs-getter  0.7.0    getter/v1  v1          verified    https://github.com/hayorov/helm-gcs
-```
-
-### Helm 3
-
-```bash
-helm plugin install https://github.com/hayorov/helm-gcs.git
+helm gcs version
 ```
 
 ### Install Specific Version
 
 ```bash
-# Helm 4 (specify version via environment variable)
-curl -fsSL https://raw.githubusercontent.com/hayorov/helm-gcs/master/scripts/install-helm4.sh | HELM_GCS_VERSION=0.7.0 sh
+# Helm 4
+helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.7.0 --verify=false
 
 # Helm 3
 helm plugin install https://github.com/hayorov/helm-gcs.git --version 0.7.0
@@ -450,7 +443,7 @@ helm gcs push --help
 
 ### Helm 4 Architecture
 
-Helm 4 enforces a strict "one plugin = one type" model. A single plugin cannot be both a CLI plugin and a Getter plugin. Therefore, helm-gcs 0.7.0+ provides two separate plugins:
+Helm 4 enforces a strict "one plugin = one type" model. A single plugin cannot be both a CLI plugin and a Getter plugin. helm-gcs 0.7.0+ keeps the install command the same as Helm 3, but installs two separate plugins automatically on Helm 4:
 
 | Plugin | Type | Purpose |
 |--------|------|---------|
@@ -459,7 +452,7 @@ Helm 4 enforces a strict "one plugin = one type" model. A single plugin cannot b
 
 ### Helm 3 Compatibility
 
-Helm 3 uses a combined plugin model where one plugin handles both CLI commands and protocol downloading. helm-gcs 0.7.x maintains full backward compatibility:
+Helm 3 uses a combined plugin model where one plugin handles both CLI commands and protocol downloading. helm-gcs 0.7.x keeps full backward compatibility while sharing the same repository install URL as Helm 4:
 
 ```bash
 # Install for Helm 3
@@ -470,9 +463,9 @@ helm gcs init gs://bucket/charts      # CLI commands
 helm repo add myrepo gs://bucket/charts  # gs:// protocol
 ```
 
-The legacy `plugin.yaml` at the repository root provides Helm 3 compatibility by:
-- Registering CLI commands via `command` field
-- Registering `gs://` protocol via `downloaders` field
+The repository root `plugin.yaml` is used as a bootstrap entrypoint for both Helm 3 and Helm 4:
+- Helm 3 keeps the legacy combined plugin layout
+- Helm 4 installs the native `gcs` and `gcs-getter` plugin pair
 
 ### Helm 2 Users
 

@@ -25,10 +25,12 @@ if [ -z "$version" ]; then
     exit 1
 fi
 
-# Detect Helm version
+# Detect Helm version using $HELM_BIN (set by Helm itself) to avoid
+# picking up a different helm version that happens to be on PATH.
 helm_major_version=""
-if command -v helm > /dev/null 2>&1; then
-    helm_version_output=$(helm version --short 2>/dev/null || echo "")
+helm_bin="${HELM_BIN:-helm}"
+if command -v "$helm_bin" > /dev/null 2>&1; then
+    helm_version_output=$("$helm_bin" version --short 2>/dev/null || echo "")
     helm_major_version=$(echo "$helm_version_output" | grep -oE 'v[0-9]+' | head -1 | tr -d 'v')
 fi
 

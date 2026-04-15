@@ -1,5 +1,5 @@
 name: gcs-getter
-version: "0.8.0"
+version: "0.7.0"
 usage: "gs:// protocol handler for Helm"
 description: |-
   Downloads Helm charts from Google Cloud Storage (GCS) buckets

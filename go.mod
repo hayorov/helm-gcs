@@ -1,6 +1,6 @@
 module github.com/hayorov/helm-gcs
 
-go 1.25.6
+go 1.26.0
 
 require (
 	cloud.google.com/go/storage v1.59.1
@@ -9,7 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/oauth2 v0.34.0
+	golang.org/x/oauth2 v0.37.0
 	google.golang.org/api v0.262.0
 	helm.sh/helm/v4 v4.1.0
 )
